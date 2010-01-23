@@ -1,0 +1,13 @@
+LocalTunnel
+===========
+
+To try it out:
+
+1) Start the server.
+			python server.py
+			
+2) Point the client at a local port serving HTTP. 
+			python client.py 8080
+			
+3) Use curl to request a page. 
+			curl http://localhost:8999
