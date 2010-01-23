@@ -1,6 +1,14 @@
 LocalTunnel
 ===========
 
+This is the vision:
+
+		$ localtunnel 8080
+		http://d8w72a.localtunnel.com is now forwarding to your local port 8080...
+
+Wouldn't that be magical? Compare to http://novas007.livejournal.com/42971.html
+
+
 To try it out:
 
 1) Start the server.
