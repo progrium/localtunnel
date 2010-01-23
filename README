@@ -8,6 +8,10 @@ This is the vision:
 
 Wouldn't that be magical? Compare to http://novas007.livejournal.com/42971.html
 
+Currently the focus is the forwarding plumbing. Works, but not so great with many concurrent requests.
+
+It should probably be modeled more after this:
+http://twistedmatrix.com/trac/browser/tags/releases/twisted-8.1.0/twisted/conch/ssh/forwarding.py
 
 To try it out:
 
@@ -17,5 +21,7 @@ To try it out:
 2) Point the client at a local port serving HTTP. 
 			python client.py 8080
 			
-3) Use curl to request a page. 
-			curl http://localhost:8999
+3) Use curl to request a page from your HTTP through the server.
+			curl http://localhost:8999/
+			
+Browsers work, but it will choke trying to serve up all your assets.
