@@ -6,6 +6,7 @@ import urlparse
 import socket
 
 SSH_USER = 'localtunnel'
+AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
 PORT_RANGE = [9000, 9100]
 
 def port_available(port):
@@ -48,7 +49,13 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             if port_available(self.tunnels[name]):
                 del self.tunnels[name]
     
-    def register_tunnel(self, superhost):
+    def install_key(self, key):
+        f = open(AUTHORIZED_KEYS, 'a')
+        f.write(key.strip()+"\n")
+        f.close()
+    
+    def register_tunnel(self, superhost, key=None):
+        if key: self.install_key(key)
         name = self.find_tunnel_name()
         port = self.find_tunnel_port()
         self.tunnels[name] = port
@@ -58,7 +65,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         host = request.getHeader('host')
         name, superhost = host.split('.', 1)
         if host.startswith('open.'):
-            return self.register_tunnel(superhost)
+            return self.register_tunnel(superhost, request.args.get('key', [None])[0])
         else:
             if not name in self.tunnels: return "Not found"
         
