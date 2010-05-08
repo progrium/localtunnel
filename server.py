@@ -62,21 +62,13 @@ class LocalReverseProxy(proxy.ReverseProxyResource):
 class TunnelResource(resource.Resource):
     isLeaf = True
     
-    def render_POST(self, request):
-        if request.path == '/open':
-            port = find_port()
-            tunnel_host = '%s.%s' % (baseN(port), HOSTNAME)
-            TUNNELS[tunnel_host] = port
-            return "ssh -NR %s:localhost:PORT %s@%s\n" % (port, SSH_USER, tunnel_host)
-        elif request.path == '/close':
-            tunnel_host = request.args.get('host', [None])[0]
-            if tunnel_host:
-                del TUNNELS[tunnel_host]
-            return "OK"
-        else:
-            return "huh?"
-
+    def render_GET(self, request):
+        port = find_port()
+        tunnel_host = '%s.%s' % (baseN(port), HOSTNAME)
+        TUNNELS[tunnel_host] = port
+        return "ssh -NR %s:localhost:PORT %s@%s\n" % (port, SSH_USER, tunnel_host)
+        
 log.startLogging(sys.stdout)
-reactor.listenTCP(8080, server.Site(LocalReverseProxy()))
-reactor.listenTCP(8888, server.Site(TunnelResource()))
+reactor.listenTCP(8005, server.Site(LocalReverseProxy()))
+reactor.listenTCP(8006, server.Site(TunnelResource()))
 reactor.run()
