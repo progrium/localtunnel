@@ -66,7 +66,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             clientFactory = self.proxyClientFactoryClass(
                 request.method, request.uri, request.clientproto,
                 request.getAllHeaders(), request.content.read(), request)
-            self.reactor.connectTCP(self.host, TUNNELS[tunnel_host], clientFactory)
+            self.reactor.connectTCP(self.host, self.tunnels[name], clientFactory)
             return server.NOT_DONE_YET
 
         
