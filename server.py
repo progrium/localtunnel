@@ -1,29 +1,12 @@
 from twisted.internet import protocol, reactor, defer, task
-from twisted.protocols import basic
-from twisted.python import log
 from twisted.web import http, proxy, resource, server
+from twisted.python import log
 import sys, time
-from urllib import quote as urlquote
-
 import urlparse
 import socket
-import time
 
-HOSTNAME = 'localtunnel.com'
 SSH_USER = 'root'
 PORT_RANGE = [9000, 9100]
-
-TUNNELS = {}
-
-def find_port():
-    port = PORT_RANGE[0]
-    start_time = time.time()
-    while not port_available(port):
-        if time.time()-start_time > 3:
-            raise Exception("No port available")
-        port += 1
-        if port >= PORT_RANGE[1]: port = PORT_RANGE[0]
-    return port
 
 def port_available(port):
     try:
@@ -32,45 +15,61 @@ def port_available(port):
     except socket.error:
         return True
     
-
 def baseN(num,b=36,numerals="0123456789abcdefghijklmnopqrstuvwxyz"): 
     return ((num == 0) and  "0" ) or (baseN(num // b, b).lstrip("0") + numerals[num % b])
 
-class LocalReverseProxy(proxy.ReverseProxyResource):
-    def __init__(self, path='', host='127.0.0.1'):
-        proxy.ReverseProxyResource.__init__(self, host, None, path)
-    
-    def getChild(self, path, request):
-        return LocalReverseProxy(self.path + '/' + urlquote(path, safe=""), host=self.host)
-    
-    def render(self, request):
-        tunnel_host = request.getHeader('host').split(':')[0]
-        print tunnel_host
-        print TUNNELS
-        if not tunnel_host in TUNNELS: return "Not found"
-        
-        request.content.seek(0, 0)
-        qs = urlparse.urlparse(request.uri)[4]
-        if qs:
-            rest = self.path + '?' + qs
-        else:
-            rest = self.path
-        clientFactory = self.proxyClientFactoryClass(
-            request.method, rest, request.clientproto,
-            request.getAllHeaders(), request.content.read(), request)
-        self.reactor.connectTCP(self.host, TUNNELS[tunnel_host], clientFactory)
-        return server.NOT_DONE_YET
-
-class TunnelResource(resource.Resource):
+class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     isLeaf = True
     
-    def render_GET(self, request):
-        port = find_port()
-        tunnel_host = '%s.%s' % (baseN(port), HOSTNAME)
-        TUNNELS[tunnel_host] = port
-        return "ssh -NR %s:localhost:PORT %s@%s\n" % (port, SSH_USER, tunnel_host)
+    def __init__(self, user, host='127.0.0.1'):
+        self.user = user
+        self.tunnels = {}
+        proxy.ReverseProxyResource.__init__(self, host, None, None)
+    
+    def find_tunnel_name(self):
+        name = baseN(abs(hash(time.time())))[0:3]
+        if name in self.tunnels and not port_available(self.tunnels[name]):
+            time.sleep(0.1)
+            return self.find_tunnel_name()
+        return name
+        
+    def find_tunnel_port(self):
+        port = PORT_RANGE[0]
+        start_time = time.time()
+        while not port_available(port):
+            if time.time()-start_time > 3:
+                raise Exception("No port available")
+            port += 1
+            if port >= PORT_RANGE[1]: port = PORT_RANGE[0]
+        return port
+    
+    def garbage_collect(self):
+        for name in self.tunnels:
+            if port_available(self.tunnels[name]):
+                del self.tunnels[name]
+    
+    def register_tunnel(self, superhost):
+        name = self.find_tunnel_name()
+        port = self.find_tunnel_port()
+        self.tunnels[name] = port
+        return "%s@%s.%s:%s\n" % (self.user, name, superhost, port)
+    
+    def render(self, request):
+        host = request.getHeader('host')
+        name, superhost = host.split('.', 1)
+        if host.startswith('open.'):
+            return self.register_tunnel(superhost)
+        else:
+            if not name in self.tunnels: return "Not found"
+        
+            request.content.seek(0, 0)
+            clientFactory = self.proxyClientFactoryClass(
+                request.method, request.uri, request.clientproto,
+                request.getAllHeaders(), request.content.read(), request)
+            self.reactor.connectTCP(self.host, TUNNELS[tunnel_host], clientFactory)
+            return server.NOT_DONE_YET
+
         
 log.startLogging(sys.stdout)
-reactor.listenTCP(8005, server.Site(LocalReverseProxy()))
-reactor.listenTCP(8006, server.Site(TunnelResource()))
+reactor.listenTCP(8005, server.Site(LocalTunnelReverseProxy(SSH_USER)))
 reactor.run()
