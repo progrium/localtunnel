@@ -4,29 +4,40 @@ require 'net/ssh'
 require 'net/ssh/gateway'
 require 'net/http'
 require 'uri'
+require 'optparse'
 
 require 'lib/gateway'
 
-local_port = ARGV[0]
+options = {}
+op = OptionParser.new do |opts|
+  opts.banner = "Usage: localtunnel [options] <localport>"
+  opts.separator ""
+  opts.separator "Specific options:"
 
-key_option = ARGV[ARGV.index('-k')+1]
-key = File.exist?(key_options) ? File.open(key_option).read : nil
+  opts.on("-k", "--key FILE", "upload a public key for authentication") do |k|
+    options[:key] = k
+  end
+end
+opts = op.parse!
+
+local_port = opts[0]
+key = File.exist?(options[:key].to_s) ? File.open(key_file).read : nil
 
 def register_tunnel(key=nil)
-  url = URI.parse("http://open.localtunnel.com")
+  url = URI.parse("http://open.localtunnel.com/")
   if key
-    return Net::HTTP.post_form(url, {"key" => pk})
+    return Net::HTTP.post_form(url, {"key" => key}).body
   else
     return Net::HTTP.get(url)
   end
 end
 
-def start_tunnel(tunnel)
-  port, host = tunnel.split(':')
+def start_tunnel(port, tunnel)
+  remote_port, host = tunnel.split(':')
   user, host = host.split('@')
   gateway = Net::SSH::Gateway.new(host, user)
-  gateway.open_remote(local_port.to_i, '127.0.0.1', port.to_i) do |a,b|
-    puts "http://#{host} now tunnels to local port #{local_port}..."
+  gateway.open_remote(port.to_i, '127.0.0.1', remote_port.to_i) do |a,b|
+    puts "http://#{host} now tunnels to local port #{port}..."
     while true
       sleep 1
     end
@@ -34,7 +45,7 @@ def start_tunnel(tunnel)
 end
 
 begin
-  start_tunnel(register_tunnel(key))
+  start_tunnel(local_port, register_tunnel(key))
 rescue Net::SSH::AuthenticationFailed
   puts "Failed to authenticate. If this is your first tunnel, you need to"
   puts "upload a public key using the -k option."
