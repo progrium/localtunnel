@@ -5,7 +5,7 @@ import sys, time
 import urlparse
 import socket
 
-SSH_USER = 'root'
+SSH_USER = 'localtunnel'
 PORT_RANGE = [9000, 9100]
 
 def port_available(port):
@@ -52,7 +52,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         name = self.find_tunnel_name()
         port = self.find_tunnel_port()
         self.tunnels[name] = port
-        return "%s@%s.%s:%s\n" % (self.user, name, superhost, port)
+        return "%s:%s@%s.%s" % (port, self.user, name, superhost)
     
     def render(self, request):
         host = request.getHeader('host')

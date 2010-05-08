@@ -1,3 +1,22 @@
 #!/usr/bin/env ruby
 require 'rubygems'
+require 'net/ssh'
+require 'net/ssh/gateway'
+require 'net/http'
+require 'uri'
+
+require 'lib/gateway'
+
+local_port = ARGV[0]
+
+tunnel = Net::HTTP.get(URI.parse("http://open.localtunnel.com"))
+port, host = tunnel.split(':')
+user, host = host.split('@')
+gateway = Net::SSH::Gateway.new(host, user)
+gateway.open_remote(local_port.to_i, '127.0.0.1', port.to_i) do |a,b|
+  puts "http://#{host} now tunnels to local port #{local_port}..."
+  while true
+    sleep 1
+  end
+end
 
