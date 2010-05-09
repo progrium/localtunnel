@@ -74,7 +74,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         else:
             if not name in self.tunnels: return "Not found"
         
-            if host in request.received_headers['location']:
+            if 'location' in request.received_headers and host in request.received_headers['location']:
                 # Strip out the port they think they need
                 p = re.compile(r'%s\:\d+' % host)
                 location = p.sub(host, request.received_headers['location'])
