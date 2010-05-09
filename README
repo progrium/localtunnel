@@ -1,5 +1,7 @@
 localtunnel -- instant reverse tunnel for local web servers
 
+Dependencies: Ruby (with libopenssl) and Rubygems
+
 Install: sudo gem install localtunnel
 
 Usage: localtunnel [options] <localport>
