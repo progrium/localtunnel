@@ -1,27 +1,30 @@
-LocalTunnel
-===========
+localtunnel -- instant reverse tunnel for local web servers
 
-This is the vision:
+Install: sudo gem install localtunnel
 
-		$ localtunnel 8080
-		http://d8w72a.localtunnel.com is now forwarding to your local port 8080...
+Usage: localtunnel [options] <localport>
+  -k, --key FILE    upload a public key for authentication
 
-Wouldn't that be magical? Compare to http://novas007.livejournal.com/42971.html
+localtunnel is a client to a free and open source reverse tunneling service 
+made specifically for web traffic. It's intended to be used to temporarily 
+expose local web servers to the greater Internet for debugging, unit tests, 
+demos, etc. 
 
-Currently the focus is the forwarding plumbing. Works, but not so great with many concurrent requests.
+Using localtunnel is comparable to using SSH reverse/remote port forwarding on 
+a remote host that has GatewayPorts enabled, but without all the configuration
+or the need of a host. The localtunnel command works with a server component
+that is running on localtunnel.com, which is provided as a free service.
 
-It should probably be modeled more after this:
-http://twistedmatrix.com/trac/browser/tags/releases/twisted-8.1.0/twisted/conch/ssh/forwarding.py
+You typically run it like this:
 
-To try it out:
+  $ localtunnel 8080
+  
+However, if you haven't run the command before, you'll need to upload a public
+key to authenticate. You do this like so:
 
-1) Start the server.
-			python server.py
-			
-2) Point the client at a local port serving HTTP. 
-			python client.py 8080
-			
-3) Use curl to request a page from your HTTP through the server.
-			curl http://localhost:8999/
-			
-Browsers work, but it will choke trying to serve up all your assets.
+  $ localtunnel -k ~/.ssh/id_rsa.pub 8080
+
+After that, you shouldn't have to use -k again.
+
+The tunnel remains open for as long as the command is running. The tunnel is 
+closed if the command exists. 

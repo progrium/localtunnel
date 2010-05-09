@@ -1,4 +1,27 @@
 #!/usr/bin/env ruby
+# Copyright (c) 2010 Jeff Lindsay
+# 
+# Permission is hereby granted, free of charge, to any person
+# obtaining a copy of this software and associated documentation
+# files (the "Software"), to deal in the Software without
+# restriction, including without limitation the rights to use,
+# copy, modify, merge, publish, distribute, sublicense, and/or sell
+# copies of the Software, and to permit persons to whom the
+# Software is furnished to do so, subject to the following
+# conditions:
+# 
+# The above copyright notice and this permission notice shall be
+# included in all copies or substantial portions of the Software.
+# 
+# THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
+# EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
+# OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
+# NONINFRINGEMENT. IN NO EVENT SHALL THE AUTHORS OR COPYRIGHT
+# HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER LIABILITY,
+# WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING
+# FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
+# OTHER DEALINGS IN THE SOFTWARE.
+
 require 'rubygems'
 require 'net/ssh'
 require 'net/ssh/gateway'
@@ -6,24 +29,6 @@ require 'net/http'
 require 'uri'
 require 'optparse'
 require 'json'
-
-require 'lib/gateway'
-
-key = nil
-options = OptionParser.new do |o|
-  o.banner = "Usage: localtunnel [options] <localport>"
-  o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
-    key = File.exist?(k.to_s) ? File.open(k).read : nil
-  end
-  o.on('-h', "--help", "show this help") { puts o; exit }
-end
-
-args = options.parse!
-local_port = args[0]
-unless local_port
-  puts options
-  exit
-end
 
 def register_tunnel(key=nil)
   url = URI.parse("http://open.localtunnel.com/")
@@ -49,14 +54,66 @@ def start_tunnel(port, tunnel)
       exit
     end
   end
-end
-
-begin
-  start_tunnel(local_port, register_tunnel(key))
 rescue Net::SSH::AuthenticationFailed
   possible_key = Dir[File.expand_path('~/.ssh/*.pub')].first
   puts "   Failed to authenticate. If this is your first tunnel, you need to"
   puts "   upload a public key using the -k option. Try this:\n\n"
-  puts "   localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{local_port}"
+  puts "   localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{port}"
+  exit
 end
 
+# http://groups.google.com/group/capistrano/browse_thread/thread/455c0c8a6faa9cc8?pli=1
+class Net::SSH::Gateway
+  # Opens a SSH tunnel from a port on a remote host to a given host and port
+  # on the local side
+  # (equivalent to openssh -R parameter)
+  def open_remote(port, host, remote_port, remote_host = "127.0.0.1")
+    ensure_open!
+
+    @session_mutex.synchronize do
+      @session.forward.remote(port, host, remote_port, remote_host)
+    end
+
+    if block_given?
+      begin
+        yield [remote_port, remote_host]
+      ensure
+        close_remote(remote_port, remote_host)
+      end
+    else
+      return [remote_port, remote_host]
+    end
+  rescue Errno::EADDRINUSE
+    retry
+  end
+
+  # Cancels port-forwarding over an open port that was previously opened via
+  # #open_remote.
+  def close_remote(port, host = "127.0.0.1")
+    ensure_open!
+
+    @session_mutex.synchronize do
+      @session.forward.cancel_remote(port, host)
+    end
+  end
+end
+
+### Main
+
+key = nil
+options = OptionParser.new do |o|
+  o.banner = "Usage: localtunnel [options] <localport>"
+  o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
+    key = File.exist?(k.to_s) ? File.open(k).read : nil
+  end
+  o.on('-h', "--help", "show this help") { puts o; exit }
+end
+
+args = options.parse!
+local_port = args[0]
+unless local_port
+  puts options
+  exit
+end
+
+start_tunnel(local_port, register_tunnel(key))
