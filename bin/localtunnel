@@ -5,6 +5,7 @@ require 'net/ssh/gateway'
 require 'net/http'
 require 'uri'
 require 'optparse'
+require 'json'
 
 require 'lib/gateway'
 
@@ -26,18 +27,17 @@ key = File.exist?(options[:key].to_s) ? File.open(key_file).read : nil
 def register_tunnel(key=nil)
   url = URI.parse("http://open.localtunnel.com/")
   if key
-    return Net::HTTP.post_form(url, {"key" => key}).body
+    return JSON.parse(Net::HTTP.post_form(url, {"key" => key}).body)
   else
-    return Net::HTTP.get(url)
+    return JSON.parse(Net::HTTP.get(url))
   end
 end
 
 def start_tunnel(port, tunnel)
-  remote_port, host = tunnel.split(':')
-  user, host = host.split('@')
-  gateway = Net::SSH::Gateway.new(host, user)
-  gateway.open_remote(port.to_i, '127.0.0.1', remote_port.to_i) do |a,b|
-    puts "http://#{host} now tunnels to local port #{port}..."
+  gateway = Net::SSH::Gateway.new(tunnel['host'], tunnel['user'])
+  gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |a,b|
+    puts tunnel['banner'] if tunnel.has_key? 'banner'
+    puts "Local port #{port} is now accessible from http://#{tunnel['host']} ..."
     while true
       sleep 1
     end
@@ -47,7 +47,9 @@ end
 begin
   start_tunnel(local_port, register_tunnel(key))
 rescue Net::SSH::AuthenticationFailed
+  possible_key = Dir[File.expand_path('~/.ssh/*.pub')].first
   puts "Failed to authenticate. If this is your first tunnel, you need to"
-  puts "upload a public key using the -k option."
+  puts "upload a public key using the -k option. Try this:\n"
+  puts "localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{local_port}"
 end
 

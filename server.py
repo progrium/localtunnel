@@ -4,10 +4,12 @@ from twisted.python import log
 import sys, time
 import urlparse
 import socket
+import simplejson
 
 SSH_USER = 'localtunnel'
 AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
 PORT_RANGE = [9000, 9100]
+BANNER = "This localtunnel service is brought to you by Twilio."
 
 def port_available(port):
     try:
@@ -59,12 +61,14 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         name = self.find_tunnel_name()
         port = self.find_tunnel_port()
         self.tunnels[name] = port
-        return "%s:%s@%s.%s" % (port, self.user, name, superhost)
+        return simplejson.dumps(
+            dict(through_port=port, user=self.user, host='%s.%s' % (name, superhost), banner=BANNER))
     
     def render(self, request):
         host = request.getHeader('host')
         name, superhost = host.split('.', 1)
         if host.startswith('open.'):
+            request.setHeader('Content-Type', 'application/json')
             return self.register_tunnel(superhost, request.args.get('key', [None])[0])
         else:
             if not name in self.tunnels: return "Not found"
