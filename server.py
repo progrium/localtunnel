@@ -9,7 +9,7 @@ import re
 
 SSH_USER = 'localtunnel'
 AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
-PORT_RANGE = [9000, 9100]
+PORT_RANGE = [32000, 64000]
 BANNER = "This localtunnel service is brought to you by Twilio."
 
 def port_available(port):
@@ -31,8 +31,8 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         proxy.ReverseProxyResource.__init__(self, host, None, None)
     
     def find_tunnel_name(self):
-        name = baseN(abs(hash(time.time())))[0:3]
-        if name in self.tunnels and not port_available(self.tunnels[name]):
+        name = baseN(abs(hash(time.time())))[0:4]
+        if (name in self.tunnels and not port_available(self.tunnels[name])) or name == 'open':
             time.sleep(0.1)
             return self.find_tunnel_name()
         return name
@@ -53,8 +53,10 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
                 del self.tunnels[name]
     
     def install_key(self, key):
-        f = open(AUTHORIZED_KEYS, 'a')
-        f.write(key.strip()+"\n")
+        key = key.strip()+"\n"
+        f = open(AUTHORIZED_KEYS, 'ra')
+        if not key in f.readlines():
+            f.write(key)
         f.close()
     
     def register_tunnel(self, superhost, key=None):
@@ -74,11 +76,6 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         else:
             if not name in self.tunnels: return "Not found"
         
-            if 'location' in request.received_headers and host in request.received_headers['location']:
-                # Strip out the port they think they need
-                p = re.compile(r'%s\:\d+' % host)
-                location = p.sub(host, request.received_headers['location'])
-                request.received_headers['location'] = location
             request.content.seek(0, 0)
             clientFactory = self.proxyClientFactoryClass(
                 request.method, request.uri, request.clientproto,
@@ -86,7 +83,13 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             self.reactor.connectTCP(self.host, self.tunnels[name], clientFactory)
             return server.NOT_DONE_YET
 
+#if 'location' in request.responseHeaders and host in request.responseHeaders['location']:
+#    # Strip out the port they think they need
+#    p = re.compile(r'%s\:\d+' % host)
+#    location = p.sub(host, request.responseHeaders['location'])
+#    request.responseHeaders['location'] = location
+
         
 log.startLogging(sys.stdout)
-reactor.listenTCP(8005, server.Site(LocalTunnelReverseProxy(SSH_USER)))
+reactor.listenTCP(80, server.Site(LocalTunnelReverseProxy(SSH_USER)))
 reactor.run()

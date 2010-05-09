@@ -17,6 +17,7 @@ options = OptionParser.new do |o|
   end
   o.on('-h', "--help", "show this help") { puts o; exit }
 end
+
 args = options.parse!
 local_port = args[0]
 unless local_port
@@ -31,16 +32,20 @@ def register_tunnel(key=nil)
   else
     return JSON.parse(Net::HTTP.get(url))
   end
+rescue 
+  puts "   Unable to register tunnel. Perhaps service is down?"
+  exit
 end
 
 def start_tunnel(port, tunnel)
   gateway = Net::SSH::Gateway.new(tunnel['host'], tunnel['user'])
-  gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |a,b|
-    puts tunnel['banner'] if tunnel.has_key? 'banner'
-    puts "Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
+  gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
+    puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
+    puts "   Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
     begin
       sleep 1 while true
     rescue Interrupt
+      gateway.close_remote(rp, rh)
       exit
     end
   end
@@ -50,8 +55,8 @@ begin
   start_tunnel(local_port, register_tunnel(key))
 rescue Net::SSH::AuthenticationFailed
   possible_key = Dir[File.expand_path('~/.ssh/*.pub')].first
-  puts "Failed to authenticate. If this is your first tunnel, you need to"
-  puts "upload a public key using the -k option. Try this:\n"
-  puts "localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{local_port}"
+  puts "   Failed to authenticate. If this is your first tunnel, you need to"
+  puts "   upload a public key using the -k option. Try this:\n\n"
+  puts "   localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{local_port}"
 end
 
