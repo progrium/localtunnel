@@ -54,10 +54,12 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     
     def install_key(self, key):
         key = key.strip()+"\n"
-        f = open(AUTHORIZED_KEYS, 'ra')
-        if not key in f.readlines():
-            f.write(key)
-        f.close()
+        fr = open(AUTHORIZED_KEYS, 'r')
+        if not key in fr.readlines():
+            fa = open(AUTHORIZED_KEYS, 'a')
+            fa.write(key)
+            fa.close()
+        fr.close()
     
     def register_tunnel(self, superhost, key=None):
         if key: self.install_key(key)
