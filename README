@@ -12,17 +12,18 @@ made specifically for web traffic. It's intended to be used to temporarily
 expose local web servers to the greater Internet for debugging, unit tests, 
 demos, etc. 
 
+This is how you make your local port 8080 public:
+
+  $ localtunnel 8080
+  Port 8080 is now publicly accessible from http://8bv2.localtunnel.com ...
+
 Using localtunnel is comparable to using SSH reverse/remote port forwarding on 
 a remote host that has GatewayPorts enabled, but without all the configuration
 or the need of a host. The localtunnel command works with a server component
 that is running on localtunnel.com, which is provided as a free service.
 
-You typically run it like this:
-
-  $ localtunnel 8080
-  
-However, if you haven't run the command before, you'll need to upload a public
-key to authenticate. You do this like so:
+If you haven't run the command before, you'll need to upload a public key to
+authenticate. You do this like so:
 
   $ localtunnel -k ~/.ssh/id_rsa.pub 8080
 
