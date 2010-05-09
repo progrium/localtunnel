@@ -9,20 +9,20 @@ require 'json'
 
 require 'lib/gateway'
 
-options = {}
-op = OptionParser.new do |opts|
-  opts.banner = "Usage: localtunnel [options] <localport>"
-  opts.separator ""
-  opts.separator "Specific options:"
-
-  opts.on("-k", "--key FILE", "upload a public key for authentication") do |k|
-    options[:key] = k
+key = nil
+options = OptionParser.new do |o|
+  o.banner = "Usage: localtunnel [options] <localport>"
+  o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
+    key = File.exist?(k.to_s) ? File.open(k).read : nil
   end
+  o.on('-h', "--help", "show this help") { puts o; exit }
 end
-opts = op.parse!
-
-local_port = opts[0]
-key = File.exist?(options[:key].to_s) ? File.open(key_file).read : nil
+args = options.parse!
+local_port = args[0]
+unless local_port
+  puts options
+  exit
+end
 
 def register_tunnel(key=nil)
   url = URI.parse("http://open.localtunnel.com/")
@@ -37,9 +37,11 @@ def start_tunnel(port, tunnel)
   gateway = Net::SSH::Gateway.new(tunnel['host'], tunnel['user'])
   gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |a,b|
     puts tunnel['banner'] if tunnel.has_key? 'banner'
-    puts "Local port #{port} is now accessible from http://#{tunnel['host']} ..."
-    while true
-      sleep 1
+    puts "Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
+    begin
+      sleep 1 while true
+    rescue Interrupt
+      exit
     end
   end
 end

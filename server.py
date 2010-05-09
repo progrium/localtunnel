@@ -5,6 +5,7 @@ import sys, time
 import urlparse
 import socket
 import simplejson
+import re
 
 SSH_USER = 'localtunnel'
 AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
@@ -73,6 +74,11 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         else:
             if not name in self.tunnels: return "Not found"
         
+            if host in request.received_headers['location']:
+                # Strip out the port they think they need
+                p = re.compile(r'%s\:\d+' % host)
+                location = p.sub(host, request.received_headers['location'])
+                request.received_headers['location'] = location
             request.content.seek(0, 0)
             clientFactory = self.proxyClientFactoryClass(
                 request.method, request.uri, request.clientproto,
