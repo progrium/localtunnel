@@ -1,4 +1,4 @@
-localtunnel -- instant reverse tunnel for local web servers
+localtunnel -- instant public tunnel for local web servers
 
 Dependencies: Ruby (with libopenssl) and Rubygems
 
