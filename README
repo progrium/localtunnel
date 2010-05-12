@@ -30,4 +30,4 @@ authenticate. You do this like so:
 After that, you shouldn't have to use -k again.
 
 The tunnel remains open for as long as the command is running. The tunnel is 
-closed if the command exists. 
+closed if the command exits.
