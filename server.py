@@ -12,6 +12,7 @@ AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
 PORT_RANGE = [32000, 64000]
 BANNER = "This localtunnel service is brought to you by Twilio."
 SSH_OPTIONS = 'command="/bin/echo Shell access denied",no-agent-forwarding,no-pty,no-user-rc,no-X11-forwarding '
+KEY_REGEX = re.compile(r'^ssh-(\w{3}) [^\n]+$')
 
 def port_available(port):
     try:
@@ -54,6 +55,8 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
                 del self.tunnels[name]
     
     def install_key(self, key):
+        if not KEY_REGEX.match(key.strip()):
+            return False
         key = ''.join([SSH_OPTIONS, key.strip(), "\n"])
         fr = open(AUTHORIZED_KEYS, 'r')
         if not key in fr.readlines():
@@ -61,9 +64,10 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             fa.write(key)
             fa.close()
         fr.close()
+        return True
     
     def register_tunnel(self, superhost, key=None):
-        if key: self.install_key(key)
+        if key and not self.install_key(key): return simplejson.dumps(dict(error="Invalid key."))
         name = self.find_tunnel_name()
         port = self.find_tunnel_port()
         self.tunnels[name] = port

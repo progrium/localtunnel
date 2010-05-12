@@ -33,12 +33,17 @@ require 'json'
 def register_tunnel(key=nil)
   url = URI.parse("http://open.localtunnel.com/")
   if key
-    return JSON.parse(Net::HTTP.post_form(url, {"key" => key}).body)
+    resp = JSON.parse(Net::HTTP.post_form(url, {"key" => key}).body)
   else
-    return JSON.parse(Net::HTTP.get(url))
+    resp = JSON.parse(Net::HTTP.get(url))
   end
+  if resp.has_key? 'error'
+    puts "   [Error] #{resp['error']}"
+    exit
+  end
+  return resp
 rescue 
-  puts "   Unable to register tunnel. Perhaps service is down?"
+  puts "   [Error] Unable to register tunnel. Perhaps service is down?"
   exit
 end
 
