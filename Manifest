@@ -1,5 +1,6 @@
 README
 Rakefile
+lib/localtunnel.rb
 bin/localtunnel
 server.py
 Manifest

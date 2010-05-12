@@ -2,7 +2,7 @@ require 'rubygems'
 require 'rake'
 require 'echoe'
 
-Echoe.new('localtunnel', '0.1') do |p|
+Echoe.new('localtunnel', '0.2') do |p|
   p.description    = "instant reverse tunnel for local web servers"
   p.url            = "http://github.com/progrium/localtunnel"
   p.author         = "Jeff Lindsay"
