@@ -21,7 +21,7 @@ def port_available(port):
     except socket.error:
         return True
     
-def baseN(num,b=36,numerals="0123456789abcdefghijklmnopqrstuvwxyz"): 
+def baseN(num,b=32,numerals="23456789abcdefghijkmnpqrstuvwxyz"): 
     return ((num == 0) and  "0" ) or (baseN(num // b, b).lstrip("0") + numerals[num % b])
 
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
