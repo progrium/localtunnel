@@ -1,3 +1,7 @@
+try:
+    from twisted.internet import pollreactor
+    pollreactor.install()
+except: pass
 from twisted.internet import protocol, reactor, defer, task
 from twisted.web import http, proxy, resource, server
 from twisted.python import log
