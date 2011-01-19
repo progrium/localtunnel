@@ -1,6 +1,6 @@
 #!/usr/bin/env ruby
 # Copyright (c) 2010 Jeff Lindsay
-# 
+#
 # Permission is hereby granted, free of charge, to any person
 # obtaining a copy of this software and associated documentation
 # files (the "Software"), to deal in the Software without
@@ -9,10 +9,10 @@
 # copies of the Software, and to permit persons to whom the
 # Software is furnished to do so, subject to the following
 # conditions:
-# 
+#
 # The above copyright notice and this permission notice shall be
 # included in all copies or substantial portions of the Software.
-# 
+#
 # THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND,
 # EXPRESS OR IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES
 # OF MERCHANTABILITY, FITNESS FOR A PARTICULAR PURPOSE AND
@@ -22,88 +22,10 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-require 'rubygems'
-require 'net/ssh'
-require 'net/ssh/gateway'
-require 'net/http'
-require 'uri'
-require 'optparse'
-require 'json'
+base_dir = File.dirname(File.expand_path(__FILE__))
 
-def register_tunnel(key=nil)
-  url = URI.parse("http://open.localtunnel.com/")
-  if key
-    resp = JSON.parse(Net::HTTP.post_form(url, {"key" => key}).body)
-  else
-    resp = JSON.parse(Net::HTTP.get(url))
-  end
-  if resp.has_key? 'error'
-    puts "   [Error] #{resp['error']}"
-    exit
-  end
-  return resp
-rescue 
-  puts "   [Error] Unable to register tunnel. Perhaps service is down?"
-  exit
-end
-
-def start_tunnel(port, tunnel)
-  gateway = Net::SSH::Gateway.new(tunnel['host'], tunnel['user'])
-  gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
-    puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
-    puts "   Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
-    begin
-      sleep 1 while true
-    rescue Interrupt
-      gateway.close_remote(rp, rh)
-      exit
-    end
-  end
-rescue Net::SSH::AuthenticationFailed
-  possible_key = Dir[File.expand_path('~/.ssh/*.pub')].first
-  puts "   Failed to authenticate. If this is your first tunnel, you need to"
-  puts "   upload a public key using the -k option. Try this:\n\n"
-  puts "   localtunnel -k #{possible_key ? possible_key : '~/path/to/key'} #{port}"
-  exit
-end
-
-# http://groups.google.com/group/capistrano/browse_thread/thread/455c0c8a6faa9cc8?pli=1
-class Net::SSH::Gateway
-  # Opens a SSH tunnel from a port on a remote host to a given host and port
-  # on the local side
-  # (equivalent to openssh -R parameter)
-  def open_remote(port, host, remote_port, remote_host = "127.0.0.1")
-    ensure_open!
-
-    @session_mutex.synchronize do
-      @session.forward.remote(port, host, remote_port, remote_host)
-    end
-
-    if block_given?
-      begin
-        yield [remote_port, remote_host]
-      ensure
-        close_remote(remote_port, remote_host)
-      end
-    else
-      return [remote_port, remote_host]
-    end
-  rescue Errno::EADDRINUSE
-    retry
-  end
-
-  # Cancels port-forwarding over an open port that was previously opened via
-  # #open_remote.
-  def close_remote(port, host = "127.0.0.1")
-    ensure_open!
-
-    @session_mutex.synchronize do
-      @session.forward.cancel_remote(port, host)
-    end
-  end
-end
-
-### Main
+require base_dir + '/../lib/local_tunnel'
+require base_dir + '/../lib/net_ssh_gateway_patch'
 
 key = nil
 options = OptionParser.new do |o|
@@ -121,4 +43,6 @@ unless local_port
   exit
 end
 
-start_tunnel(local_port, register_tunnel(key))
+x = LocalTunnel.new(local_port, key)
+x.register_tunnel
+x.start_tunnel
