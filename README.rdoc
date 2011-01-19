@@ -4,10 +4,13 @@ Dependencies:
 - Ruby (with libopenssl) and Rubygems.  
 - A public key.
 
-Type <tt>sudo apt-get install ruby ruby1.8-dev rubygems1.8
-libopenssl-ruby</tt> to satisfy dependencies.
+To get the dependencies, type:
 
-Run <tt>ssh-keygen</tt> if you have never made a public key.
+    sudo apt-get install ruby ruby1.8-dev rubygems1.8 libopenssl-ruby
+
+If you have never made a public key, then run:
+
+    ssh-keygen
 
 == Install 
 
@@ -23,7 +26,7 @@ or to get the source:
     localtunnel [options] <localport>
       -k, --key FILE    upload a public key for authentication
 
-localtunnel is a client to a free and open source reverse tunneling
+Localtunnel is a client to a free and open source reverse tunneling
 service made specifically for web traffic. It's intended to be used to
 temporarily expose local web servers to the greater Internet for
 debugging, unit tests, demos, etc.   
@@ -47,7 +50,7 @@ key to authenticate. You do this once:
 
 After that, you shouldn't have to use -k again.
 
-localtunnel can be started before or after the local web server.   It
+Localtunnel can be started before or after the local web server.   It
 tunnels through to the url given in that status message "publicly
 accessible from..." for as long as the command is running.  The tunnel
 is closed if the command exits.
