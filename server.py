@@ -1,3 +1,7 @@
+try:
+    from twisted.internet import pollreactor
+    pollreactor.install()
+except: pass
 from twisted.internet import protocol, reactor, defer, task
 from twisted.web import http, proxy, resource, server
 from twisted.python import log
@@ -21,7 +25,7 @@ def port_available(port):
     except socket.error:
         return True
     
-def baseN(num,b=36,numerals="0123456789abcdefghijklmnopqrstuvwxyz"): 
+def baseN(num,b=32,numerals="23456789abcdefghijkmnpqrstuvwxyz"): 
     return ((num == 0) and  "0" ) or (baseN(num // b, b).lstrip("0") + numerals[num % b])
 
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
