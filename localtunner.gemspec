@@ -9,6 +9,9 @@ Gem::Specification.new do |s|
 LocalTunnel
   EOS
 
+  s.add_dependency "net-ssh"
+  s.add_dependency "net-ssh-gateway"
+
   s.files      = Dir['lib/*']
   s.test_files = Dir['test/**/*.rb']
 end
