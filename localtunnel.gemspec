@@ -1,9 +1,9 @@
 Gem::Specification.new do |s|
   s.name      = "localtunnel"
   s.version   = "0.2"
-  s.authors   = [""]
-  s.email     = ""
-  s.homepage  = "http://github.com/progrium/localtunner"
+  s.authors   = ["Jeff Lindsay"]
+  s.email     = "progrium@twilio.com"
+  s.homepage  = "http://github.com/progrium/localtunnel"
   s.summary   = ""
   s.description  = <<-EOS.strip
 LocalTunnel
