@@ -3,7 +3,7 @@ require 'rake'
 require 'echoe'
 
 Echoe.new('localtunnel', '0.2') do |p|
-  p.description    = "instant reverse tunnel for local web servers"
+  p.description    = "instant public tunnel to your local web server"
   p.url            = "http://github.com/progrium/localtunnel"
   p.author         = "Jeff Lindsay"
   p.email          = "jeff.lindsay@twilio.com"

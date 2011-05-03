@@ -1,25 +1,18 @@
-= localtunnel -- instant public tunnel for local web servers
+= localtunnel -- instant public tunnel to your local web server
 
-Dependencies: 
-- Ruby (with libopenssl) and Rubygems.  
-- A public key.
+== Install 
 
-To get the dependencies, type:
+To get the dependencies if you don't have them, type:
 
     sudo apt-get install ruby ruby1.8-dev rubygems1.8 libopenssl-ruby
 
-If you have never made a public key, then run:
-
-    ssh-keygen
-
-== Install 
+Now you can install localtunnel with RubyGems:
 
     sudo gem install localtunnel 
 
 or to get the source:
 
     git clone http://github.com/progrium/localtunnel.git
-
 
 == Usage
 
@@ -34,8 +27,7 @@ debugging, unit tests, demos, etc.
 This is how you make your local port 8080 public:
 
     $ localtunnel 8080
-
-Port 8080 is now publicly accessible from http://8bv2.localtunnel.com ...
+    Port 8080 is now publicly accessible from http://8bv2.localtunnel.com ...
 
 Using localtunnel is comparable to using SSH reverse/remote port
 forwarding on a remote host that has GatewayPorts enabled, but without
