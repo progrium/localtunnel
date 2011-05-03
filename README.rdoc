@@ -47,3 +47,14 @@ tunnels through to the url given in that status message "publicly
 accessible from..." for as long as the command is running.  The tunnel
 is closed if the command exits.
 
+== Contributors
+
+    andyl (andy@r210.com) 
+    Charles Merriam (charles.merriam@gmail.com) 
+    Hunter Gillane (hunter.gillane@gmail.com) 
+    Michael Sofaer (msofaer@pivotallabs.com) 
+    Jeff Lindsay (progrium@gmail.com)
+
+== License
+
+MIT
