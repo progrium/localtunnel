@@ -1,0 +1,286 @@
+
+body { 
+	background-color:#F0EEEC; 
+	font-family:'Courier'; 
+	color:#404040; 
+	margin:0px; 
+}
+
+.content { 
+	position:relative; 
+	display:block; 
+	width:960px; 
+	margin-bottom:50px; 
+} 
+
+		.content .banner { 
+			position:relative; 
+			display:block; 
+			width:625px; 
+			height:200px; 
+			background-image:url("../images/banner.png"); 
+			margin-left:auto; 
+			margin-right:auto; 
+			margin-bottom:80px; 
+		} 
+		
+		.content .callout { 
+			position:relative; 
+			display:block; 
+			width:625px; 
+			height:150px; 
+			margin-bottom:40px; 
+			clear:both; 
+		}
+		
+				.content .callout .description { 
+					position:relative; 
+					display:block; 
+					width:280px; 
+					font-size:25px; 
+					color:#505050; 
+					line-height:28px; 
+					text-align:left; 
+					float:left; 
+				}
+				
+						.content .callout .description .highlight { 
+							font-weight:bold; 
+						}
+						
+				
+				.content .callout .bracket { 
+					position:relative; 
+					display:block; 
+					font-size:140px; 
+					font-family:'Times New Roman'; 
+					color:#D8DCAB; 
+					margin-left:0px; 
+					margin-right:20px; 
+					top:-20px; 
+					float:left; 
+				}
+				
+				.content .callout .code-sample { 
+					position:relative; 
+					display:block; 
+					width:250px; 
+					font-size:16px; 
+					color:#666666; 
+					line-height:23px; 
+					text-align:left; 
+					margin-top:10px; 
+					float:left; 
+				}
+				
+		.content .call-to-action { 
+			position:relative; 
+			display:block; 
+			width:224px; 
+			height:122px; 
+			background-image:url("../images/button_getstarted.png"); 
+			cursor:pointer; 
+			clear:both; 
+		} 
+		
+.sub-content { 
+	position:relative; 
+	display:block; 
+	width:100%; 
+	background-color:#322823; 
+	float:left; 
+}
+
+		.sub-content .ground-icons { 
+			position:relative; 
+			display:block; 
+			width:960px; 
+			z-index:100002; 
+		} 
+		
+		.sub-content .ground-icons .container { 
+			position:absolute; 
+		}
+		
+		.sub-content .ground-icons .hard-hat { 
+			position:absolute; 
+			width:180px; 
+			height:137px; 
+			left:-50px; 
+			top:-80px; 
+			background-image:url("../images/icon_hardhat.png"); 
+		} 
+		
+		.sub-content .ground-icons .shovel { 
+			position:absolute; 
+			width:383px; 
+			height:153px; 
+			left:750px; 
+			top:-80px; 
+			background-image:url("../images/icon_shovel.png"); 
+		} 
+						
+				.sub-content .ground-icons .sponsored-by { 
+					position:absolute; 
+					left:625px; 
+					top:100px; 
+				} 
+				
+						.sub-content .ground-icons .sponsored-by .title { 
+							position:absolute; 
+							left:0px; 
+							top:15px; 
+							color:#B8A99C; 
+							white-space:nowrap; 
+							float:left; 
+						} 
+						
+						.sub-content .ground-icons .sponsored-by .logo { 
+							position:absolute; 
+							width:176px; 
+							height:52px; 
+							left:135px; 
+							top:0px; 
+							background-image:url("../images/icon_twiliologo.png"); 
+							float:left; 
+						} 
+				
+
+
+		.sub-content .grass { 
+			position:relative; 
+			display:block; 
+			width:100%; 
+			height:40px; 
+			overflow:visible; 
+			float:left; 
+			z-index:100001; 
+		} 
+		
+		.sub-content .grass .content { 
+ 			position:relative; 
+			display:block; 
+			width:100%; 
+			height:80px; 
+			background-image:url("../images/bg_grass.png"); 
+			background-repeat:repeat-x; 
+			overflow:visible; 
+			float:left; 
+			z-index:1000000000; 
+			overflow:visible; 
+
+		} 
+		
+		.sub-content .topsoil { 
+			position:relative; 
+			display:block; 
+			width:100%; 
+			height:2000px; 
+			
+			background: #4B3F34; /* old browsers */
+			background: -moz-linear-gradient(top, #4B3F34 0%, #322823 100%); /* firefox */
+			
+			background: -webkit-gradient(linear, left top, left bottom, color-stop(0%,#4B3F34), color-stop(100%,#322823)); /* webkit */
+			
+			filter: progid:DXImageTransform.Microsoft.gradient( startColorstr='#4B3F34', endColorstr='#322823',GradientType=0 ); /* ie */
+			
+			background: -o-linear-gradient(top, #4B3F34 0%,#322823 100%); /* opera */
+
+			float:left; 
+		} 
+		
+		.sub-content .topsoil .rock-dark { 
+			position:absolute; 
+			left:0px; 
+			top:0px; 
+			width:20px; 
+			height:17px; 
+			background-image:url("../images/icon_rockdark.png"); 
+		}
+		
+		
+		.sub-content .topsoil .bones { 
+			position:absolute; 
+			width:183px; 
+			height:230px; 
+			left:400px; 
+			top:400px; 
+			background-image:url("../images/icon_bones.png"); 
+		}
+		
+		.sub-content .topsoil .ship { 
+			position:absolute; 
+			width:206px; 
+			height:119px; 
+			left:600px; 
+			top:1400px; 
+			background-image:url("../images/icon_ship.png"); 
+		}
+		
+		.sub-content .instructions { 
+			position:relative; 
+			display:block; 
+			width:600px; 
+			height:500px; 
+			margin-bottom:0px; 
+			clear:both; 
+		}
+				
+				.sub-content .instructions .steps { 
+					position:relative; 
+					display:block; 
+					width:625px; 
+					text-align:left; 
+					margin-top:40px; 
+					float:left; 
+				} 
+				
+						.sub-content .instructions .steps .title { 
+							position:relative; 
+							display:block; 
+							width:100%; 
+							font-size:28px; 
+							color:#9EA847; 
+							float:left; 
+						}
+						
+						.sub-content .instructions .steps .description { 
+							position:relative; 
+							display:block; 
+							width:100%; 
+							color:#ffffff; 
+							font-size:16px; 
+							margin-bottom:20px; 
+							float:left; 
+						}
+						
+						.sub-content .instructions .steps .highlight { 
+							color:#ffffff; 
+						}
+						
+						.sub-content .instructions .steps .code-sample {
+						    color:#fff;
+						    display: block;
+						    margin-bottom:20px; 
+						}
+						
+		.sub-content .footer { 
+			position:relative; 
+			display:block; 
+			width:625px; 
+			height:30px; 
+			margin-bottom:20px; 
+		} 
+		
+				.sub-content .footer .item { 
+					position:relative; 
+					display:block; 
+					color:#B8A99C; 
+					font-size:14px; 
+					margin-right:30px; 
+					float:left; 
+				} 
+				
+						.sub-content .footer .item .highlight { 
+							color:#ffffff; 
+						}

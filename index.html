@@ -1,77 +1,123 @@
-<!DOCTYPE html>
-<html>
-<head>
-  <meta charset='utf-8'>
+<!DOCTYPE html PUBLIC "-//W3C//DTD XHTML 1.0 Transitional//EN" "http://www.w3.org/TR/xhtml1/DTD/xhtml1-transitional.dtd"> 
+ 
+ 
+<html xmlns="http://www.w3.org/1999/xhtml"> 
 
-  <title>progrium/localtunnel @ GitHub</title>
+	<head>
+		<meta http-equiv="Content-Type" content="text/html; charset=iso-8859-1" /> 
 
-  <style type="text/css">
-    body {
-      margin-top: 1.0em;
-      background-color: #43a405;
-      font-family: Helvetica, Arial, FreeSans, san-serif;
-      color: #ffffff;
-    }
-    #container {
-      margin: 0 auto;
-      width: 700px;
-    }
-    h1 { font-size: 3.8em; color: #bc5bfa; margin-bottom: 3px; }
-    h1 .small { font-size: 0.4em; }
-    h1 a { text-decoration: none }
-    h2 { font-size: 1.5em; color: #bc5bfa; }
-    h3 { text-align: center; color: #bc5bfa; }
-    a { color: #bc5bfa; }
-    .description { font-size: 1.2em; margin-bottom: 30px; margin-top: 30px; font-style: italic;}
-    .download { float: right; }
-    pre { background: #000; color: #fff; padding: 15px;}
-    hr { border: 0; width: 80%; border-bottom: 1px solid #aaa}
-    .footer { text-align:center; padding-top:30px; font-style: italic; }
-  </style>
-</head>
+		<title>localtunnel: instantly show localhost to the rest of the world</title>
+		
+		<link rel="stylesheet" href="style/index.css" type="text/css" >
+		
+		<script language="javascript" type="text/javascript" src="script/jquery.min.js"></script>
+		<script language="javascript" type="text/javascript" src="script/index.js"></script>
+	</head>
 
-<body>
-  <a href="http://github.com/progrium/localtunnel"><img style="position: absolute; top: 0; right: 0; border: 0;" src="http://s3.amazonaws.com/github/ribbons/forkme_right_darkblue_121621.png" alt="Fork me on GitHub" /></a>
+	<body>
+		
+		<center>
+		<div class="content">
+			<div class="banner"></div>
+			
+			<div class="callout">
+				<span class="description" style="padding-top: 15px;">The easiest way to <span class="highlight">share localhost</span> web servers to the rest of the world</span>
+				<div class="bracket">{</div>
+				<span class="code-sample">
+					$ gem install localtunnel
+					<br />$ localtunnel 8000
+					<br />
+					<br />share this url:
+					<br />http://xyz.localtunnel.com
+				</span>
+			</div>
+			
+			<div id="btnCallToAction" class="call-to-action"></div>
+		</div>
+		
+		<div class="sub-content">
+			<center>
+			<div class="ground-icons">
+				<div class="container">
+					<div class="hard-hat"></div>
+					<div class="shovel"></div>
+				</div>
+				
+				
+				<div class="sponsored-by">
+					<span class="title">sponsored by</span>
+					<div class="logo"></div>
+				</div>
+			</div>
+			</center>
+			
+			<div class="grass">
+				<div class="content"></div>
+			</div>
+			
+			<div id="pnlTopsoil" class="topsoil">
+				<div class="bones"></div>
+				<div class="ship"></div>
+			</div>
+		
+			<div id="pnlInstructions" class="instructions" style="margin-bottom: 30px;">
+			
+				<span class="steps">
+					<span class="title">STEP 1:</span>
+					<span class="description">Install localtunnel using RubyGems. Check the full <a class="highlight" href="https://github.com/progrium/localtunnel#readme">README</a> if you don't have Ruby or RubyGems.</span>
+					<span class="code-sample">$ sudo gem install localtunnel</span>
+					
+					<span class="title">STEP 2:</span>
+					<span class="description">Run your local web server on any port! Let's say you're running Apache on port 8080.</span>
+				
+					<span class="title">STEP 3:</span>
+					<span class="description">Now run localtunnel passing it the port to share. The first time you run localtunnel you have to point to a public SSH key. Check the <a class="highlight" href="https://github.com/progrium/localtunnel#readme">README</a> if you need help. Here's an example:</span>
+					<span class="code-sample">$ localtunnel -k ~/.ssh/id_rsa.pub 8080</span>
+				  <span class="description">You should see something like this:</span>
+				  <span class="code-sample">Port 8080 is now publicly accessible from http://8bv2.localtunnel.com ...</span>
+				</span>
+			</div>
+			
+			<div class="footer">
+				<span class="item" >created by: <a href="http://progrium.com" class="highlight" >jeff lindsay</a></span>
+				<span class="item" >twitter: <a href="http://twitter.com/progrium" class="highlight">@progrium</a></span>
+				<span class="item" >sponsored by <a href="http://twilio.com" class="highlight">twilio</a></span>
+			</div>
+		</div>
+		
+		
+		
+		
+		
+		
+		</center>
+		
+		
+		
+		
+		<!-- github fork ribbon -->		
+		<a href="http://github.com/progrium/localtunnel"><img style="position: absolute; top: 0; right: 0; border: 0;" src="https://d3nwyuy0nl342s.cloudfront.net/img/30f550e0d38ceb6ef5b81500c64d970b7fb0f028/687474703a2f2f73332e616d617a6f6e6177732e636f6d2f6769746875622f726962626f6e732f666f726b6d655f72696768745f6f72616e67655f6666373630302e706e67" alt="Fork me on GitHub"></a>
 
-  <div id="container">
-
-    <div class="download">
-      <a href="http://github.com/progrium/localtunnel/zipball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/zip.png"></a>
-      <a href="http://github.com/progrium/localtunnel/tarball/master">
-        <img border="0" width="90" src="http://github.com/images/modules/download/tar.png"></a>
-    </div>
-
-    <h1><a href="http://github.com/progrium/localtunnel">localtunnel</a>
-      <span class="small">by <a href="http://github.com/progrium">progrium</a></span></h1>
-
-    <div class="description">
-      Quickly expose your local web server to the Internet
-    </div>
-
-    <h2>Authors</h2>
-<p>andyl (andy@r210.com)<br/>Charles Merriam (charles.merriam@gmail.com)<br/>Hunter Gillane (hunter.gillane@gmail.com)<br/>Michael Sofaer (msofaer@pivotallabs.com)<br/>Jeff Lindsay (progrium@gmail.com)<br/><br/>      </p>
-<h2>Contact</h2>
-<p>Jeff Lindsay (progrium@gmail.com)<br/>      </p>
 
 
-    <h2>Download</h2>
-    <p>
-      You can download this project in either
-      <a href="http://github.com/progrium/localtunnel/zipball/master">zip</a> or
-      <a href="http://github.com/progrium/localtunnel/tarball/master">tar</a> formats.
-    </p>
-    <p>You can also clone the project with <a href="http://git-scm.com">Git</a>
-      by running:
-      <pre>$ git clone git://github.com/progrium/localtunnel</pre>
-    </p>
+		<script>
+		
+			var elements; 
+			
+			
+			$(document).ready( function(){ 
+				elements = new Object( ); 
+				elements["btnCallToAction"] = $("#btnCallToAction"); 
+				elements["pnlInstructions"] = $("#pnlInstructions"); 
+				elements["pnlTopsoil"] = $("#pnlTopsoil"); 
+				
+				Page.Init( elements ); 
+			}); 
+		
+		</script>
 
-    <div class="footer">
-      get the source code on GitHub : <a href="http://github.com/progrium/localtunnel">progrium/localtunnel</a>
-    </div>
 
-  </div>
 
-  
-</body>
+	</body>
+
 </html>
