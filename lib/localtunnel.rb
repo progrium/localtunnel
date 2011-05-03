@@ -1,1 +1,2 @@
-## Nothing to see here
+$: << File.expand_path(File.dirname(__FILE__))
+require 'localtunnel/tunnel'

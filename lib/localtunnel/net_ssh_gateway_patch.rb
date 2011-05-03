@@ -1,10 +1,6 @@
 require 'rubygems'
 require 'net/ssh'
 require 'net/ssh/gateway'
-require 'net/http'
-require 'uri'
-require 'optparse'
-require 'json'
 
 # http://groups.google.com/group/capistrano/browse_thread/thread/455c0c8a6faa9cc8?pli=1
 class Net::SSH::Gateway

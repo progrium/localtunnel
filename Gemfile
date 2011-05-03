@@ -1,2 +1,0 @@
-source :gemcutter
-gemspec

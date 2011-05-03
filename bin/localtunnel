@@ -22,10 +22,9 @@
 # FROM, OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR
 # OTHER DEALINGS IN THE SOFTWARE.
 
-base_dir = File.dirname(File.expand_path(__FILE__))
-
-require base_dir + '/../lib/local_tunnel'
-require base_dir + '/../lib/net_ssh_gateway_patch'
+require 'rubygems'
+require 'optparse'
+require 'localtunnel'
 
 key = nil
 options = OptionParser.new do |o|
@@ -43,6 +42,6 @@ unless local_port
   exit
 end
 
-x = LocalTunnel.new(local_port, key)
-x.register_tunnel
-x.start_tunnel
+t = LocalTunnel::Tunnel.new(local_port, key)
+t.register_tunnel
+t.start_tunnel

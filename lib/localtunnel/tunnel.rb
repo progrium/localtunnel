@@ -3,10 +3,13 @@ require 'net/ssh'
 require 'net/ssh/gateway'
 require 'net/http'
 require 'uri'
-require 'optparse'
 require 'json'
 
-class LocalTunnel
+require 'localtunnel/net_ssh_gateway_patch'
+
+module LocalTunnel; end
+
+class LocalTunnel::Tunnel
 
   attr_accessor :port, :key, :host
 
