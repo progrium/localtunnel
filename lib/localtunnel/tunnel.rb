@@ -30,7 +30,7 @@ class LocalTunnel::Tunnel
       puts "   [Error] #{resp['error']}"
       exit
     end
-    @host = resp['host']
+    @host = resp['host'].split(':').first
     @tunnel = resp
     return resp
   rescue
@@ -41,7 +41,7 @@ class LocalTunnel::Tunnel
   def start_tunnel
     port = @port
     tunnel = @tunnel
-    gateway = Net::SSH::Gateway.new(tunnel['host'], tunnel['user'])
+    gateway = Net::SSH::Gateway.new(@host, tunnel['user'])
     gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
       puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
       puts "   Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
