@@ -73,7 +73,7 @@ body {
 					float:left; 
 				}
 				
-		.content .call-to-action { 
+		.content .call-to-action a {
 			position:relative; 
 			display:block; 
 			width:224px; 
@@ -81,7 +81,8 @@ body {
 			background-image:url("../images/button_getstarted.png"); 
 			cursor:pointer; 
 			clear:both; 
-		} 
+			text-decoration:none; 
+		}
 		
 .sub-content { 
 	position:relative; 

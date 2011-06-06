@@ -14,6 +14,7 @@ Page = new function(){
 		
 		this.Elements["btnCallToAction"].click( function(e){ 
 			caller.ScrollToElement( caller.Elements["pnlInstructions"] ); 
+                        e.preventDefault();
 		}); 
 		
 		var i; 
