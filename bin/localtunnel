@@ -37,7 +37,7 @@ end
 
 args = options.parse!
 local_port = args[0]
-unless local_port
+unless local_port.to_i.between?(1, 65535)
   puts options
   exit
 end
