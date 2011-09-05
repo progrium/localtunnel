@@ -27,10 +27,14 @@ require 'optparse'
 require 'localtunnel'
 
 key = nil
+autoconfig_name = nil
 options = OptionParser.new do |o|
   o.banner = "Usage: localtunnel [options] <localport>"
   o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
     key = File.exist?(k.to_s) ? File.open(k).read : nil
+  end
+  o.on("-c", "--config NAME", "load an autoconfiguration plugin") do |name|
+    autoconfig_name = name
   end
   o.on('-h', "--help", "show this help") { puts o; exit }
 end
@@ -42,6 +46,6 @@ unless local_port.to_i.between?(1, 65535)
   exit
 end
 
-t = LocalTunnel::Tunnel.new(local_port, key)
+t = LocalTunnel::Tunnel.new(local_port, key, autoconfig_name)
 t.register_tunnel
 t.start_tunnel

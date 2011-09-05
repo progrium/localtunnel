@@ -6,17 +6,19 @@ require 'uri'
 require 'json'
 
 require 'localtunnel/net_ssh_gateway_patch'
+require 'localtunnel/autoconfig'
 
 module LocalTunnel; end
 
 class LocalTunnel::Tunnel
 
-  attr_accessor :port, :key, :host
+  attr_accessor :port, :key, :host, :autoconfig
 
-  def initialize(port, key)
+  def initialize(port, key, autoconfig_name)
     @port = port
     @key  = key
     @host = ""
+    @autoconfig = autoconfig_name
   end
 
   def register_tunnel(key=@key)
@@ -44,6 +46,14 @@ class LocalTunnel::Tunnel
     gateway = Net::SSH::Gateway.new(@host, tunnel['user'])
     gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
       puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
+      if !@autoconfig.nil?
+        configurator = LocalTunnel::AutoConfig.find(@autoconfig)
+        if configurator
+          configurator.configure(tunnel['host'])
+        else
+          puts "   [Warning] Unable to find an automatic configuration plugin for '#{@autoconfig}'"
+        end
+      end
       puts "   Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
       begin
         sleep 1 while true
