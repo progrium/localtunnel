@@ -40,13 +40,15 @@ module LocalTunnel
       end
 
       def self.lookup(name)
-        $LOAD_PATH.each do |base|
+        including_current = $LOAD_PATH.dup
+        including_current << '.'
+        including_current.each do |base|
           Dir[File.join(base, "localtunnel", "#{name}_autoconfig.rb")].each do |path|
             begin
               path = path.sub("#{base}/", "")
               require path
             rescue Exception => e
-              puts "   [WARNING] Could not load autoconfig #{path.inspect}. Error: #{e.message}.\n#{e.backtrace.join("\n")}"
+              puts "   [Warning] Could not load autoconfig #{path.inspect}. Error: #{e.message}.\n#{e.backtrace.join("\n")}"
             end
           end
         end
