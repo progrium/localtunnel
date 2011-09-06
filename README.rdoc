@@ -56,9 +56,11 @@ web hooks, the painful workflow can sometimes look like this:
 2.  Copy the resulting http address
 3.  Log into your API provider and update your 'app' settings using the new address
 4.  $$ Profit
-    (Optional additional workflow)
-5.  Close your laptop lid and put your machine to sleep for a bit
-6.  Reopen the lid, and start over at step 1
+
+(Optional additional workflow)
+
+Close your laptop lid and put your machine to sleep for a bit, then reopen the
+lid, and start over at step 1
 
 Using an extensibility approach inspired by Rails generators, you can write
 code that gets executed by localtunnel after it registers for a new host
