@@ -52,15 +52,15 @@ is closed if the command exits.
 
 When using localtunnel for local development work against an API that leverages
 web hooks, the painful workflow can sometimes look like this:
-1. Run localtunnel
-2. Copy the resulting http address
-3. Log into your API provider and update your 'app' settings using the new address
-4. $$ Profit
-(Optional additional workflow)
-5. Close your laptop lid and put your machine to sleep for a bit
-6. Reopen the lid, and start over at step 1
+1.  Run localtunnel
+2.  Copy the resulting http address
+3.  Log into your API provider and update your 'app' settings using the new address
+4.  $$ Profit
+    (Optional additional workflow)
+5.  Close your laptop lid and put your machine to sleep for a bit
+6.  Reopen the lid, and start over at step 1
 
-Using an extensibility approach based on Rails generators, you can write
+Using an extensibility approach inspired by Rails generators, you can write
 code that gets executed by localtunnel after it registers for a new host
 and before it sits idle holding the connection open. You can use this to
 automate updating web hook settings.
@@ -68,8 +68,9 @@ automate updating web hook settings.
 Create a class with a name that ends in AutoConfig, inherits from
 LocalTunnel::AutoConfig::Base, and contains a method 'configure' that accepts
 a parameter which represents the newly registered host name.
-Place it in a file named foo_auto_config.rb under a localtunnel subdirectory.
-For example, to update a http://twilio.com/ application every time localtunnel is run:
+Place it in a file named my_class_auto_config.rb under a localtunnel subdirectory.
+(Where "my_class_auto_config" corresponds to the "class MyClassAutoConfig" class name.)
+For example, to update a http://twilio.com application every time localtunnel is run:
 
 in ~/MyApp/localtunnel/twilio_auto_config.rb
 
@@ -79,11 +80,6 @@ in ~/MyApp/localtunnel/twilio_auto_config.rb
     require 'uri'
 
     class TwilioAutoConfig < LocalTunnel::AutoConfig::Base
-
-      TWILIO_ACCOUNT_SID = "AC1be565743ead79bad7d725f438a158ae"
-      TWILIO_AUTH_TOKEN = ENV['TWILIO_AUTH_TOKEN']
-      TWILIO_APP_SID = ENV['TWILIO_APP_SID']
-
       def configure(host)
         # set up a client to talk to the Twilio REST API
         account_sid = # your account sid here
