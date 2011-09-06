@@ -71,7 +71,7 @@ For example, to update a http://twilio.com application every time localtunnel is
 
 in ~/MyApp/localtunnel/twilio_auto_config.rb
 
-```ruby
+``` ruby
 require 'rubygems'
 require 'localtunnel/autoconfig'
 require 'twilio-ruby'
