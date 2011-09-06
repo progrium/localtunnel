@@ -71,29 +71,31 @@ For example, to update a http://twilio.com application every time localtunnel is
 
 in ~/MyApp/localtunnel/twilio_auto_config.rb
 
-    require 'rubygems'
-    require 'localtunnel/autoconfig'
-    require 'twilio-ruby'
-    require 'uri'
+```ruby
+require 'rubygems'
+require 'localtunnel/autoconfig'
+require 'twilio-ruby'
+require 'uri'
 
-    class TwilioAutoConfig < LocalTunnel::AutoConfig::Base
-      def configure(host)
-        # set up a client to talk to the Twilio REST API
-        account_sid = # your account sid here
-        auth_token = # your auth token here
-        app_sid = # your app sid you want to update here
+class TwilioAutoConfig < LocalTunnel::AutoConfig::Base
+  def configure(host)
+    # set up a client to talk to the Twilio REST API
+    account_sid = # your account sid here
+    auth_token = # your auth token here
+    app_sid = # your app sid you want to update here
 
-        client = Twilio::REST::Client.new(account_sid, auth_token)
-        app = client.account.applications.get(app_sid)
+    client = Twilio::REST::Client.new(account_sid, auth_token)
+    app = client.account.applications.get(app_sid)
 
-        # Grab the current voice_url and swap out the host
-        voice = URI.parse(app.voice_url)
-        voice.host = host
+    # Grab the current voice_url and swap out the host
+    voice = URI.parse(app.voice_url)
+    voice.host = host
 
-        app.update({:voice_url => voice.to_s})
-        puts "   Configured Twilio app #{app.friendly_name} for new host #{host}"
-      end
-    end
+    app.update({:voice_url => voice.to_s})
+    puts "   Configured Twilio app #{app.friendly_name} for new host #{host}"
+  end
+end
+```
 
 from the command line
 
