@@ -33,7 +33,7 @@ module LocalTunnel
 
       def self.autoconfig_name(klass)
         if klass.name =~ /(\w*)AutoConfig$/
-          $1.underscore
+          underscore $1
         else
           klass.name
         end
@@ -54,17 +54,14 @@ module LocalTunnel
         end
       end
 
-  end
-end
-
-class String
-  def underscore
-    word = self.dup
-    word.gsub!(/::/, '/')
-    word.gsub!(/([A-Z]+)([A-Z][a-z])/,'\1_\2')
-    word.gsub!(/([a-z\d])([A-Z])/,'\1_\2')
-    word.tr!("-", "_")
-    word.downcase!
-    word
+      def self.underscore(camel_cased_word)
+        word = camel_cased_word.to_s.dup
+        word.gsub!(/::/, '/')
+        word.gsub!(/([A-Z]+)([A-Z][a-z])/,'\1_\2')
+        word.gsub!(/([a-z\d])([A-Z])/,'\1_\2')
+        word.tr!("-", "_")
+        word.downcase!
+        word
+      end
   end
 end
