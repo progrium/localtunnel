@@ -43,7 +43,7 @@ module LocalTunnel
         including_current = $LOAD_PATH.dup
         including_current << '.'
         including_current.each do |base|
-          Dir[File.join(base, "localtunnel", "#{name}_autoconfig.rb")].each do |path|
+          Dir[File.join(base, "localtunnel", "#{name}_auto_config.rb")].each do |path|
             begin
               path = path.sub("#{base}/", "")
               require path
