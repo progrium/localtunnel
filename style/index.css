@@ -1,9 +1,9 @@
-
 body { 
 	background-color:#F0EEEC; 
 	font-family:'Courier'; 
 	color:#404040; 
 	margin:0px; 
+	overflow: hidden;
 }
 
 .content { 
