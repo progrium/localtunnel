@@ -57,45 +57,43 @@ web hooks, the painful workflow can sometimes look like this:
 3.  Log into your API provider and update your 'app' settings using the new address
 4.  $$ Profit
 
-Using an extensibility approach inspired by Rails generators, you can write
-code that gets executed by localtunnel after it registers for a new host
+You can write code that gets executed by localtunnel after it registers for a new host
 and before it sits idle holding the connection open. You can use this to
 automate updating web hook settings.
 
-Create a class with a name that ends in AutoConfig, inherits from
-LocalTunnel::AutoConfig::Base, and contains a method 'configure' that accepts
-a parameter which represents the newly registered host name.
-Place it in a file named my_class_auto_config.rb under a localtunnel subdirectory.
-(Where "my_class_auto_config" corresponds to the "class MyClassAutoConfig" class name.)
-For example, to update a http://twilio.com application every time localtunnel is run:
+Create a file under a "localtunnel" subdirectory named the same as what you provide to the "-c" parameter.
+In that file, simply call the configure method, passing in the name, and providing a block
+that receives a configuration object. Currently the configuration object only provides the host.
 
-in ~/MyApp/localtunnel/twilio_auto_config.rb
+For example, to configure Twilio every time you run localtunnel, you could create a file:
+~/MyApp/localtunnel/twilio.rb
+
+It would contain something like the following:
 
     require 'rubygems'
-    require 'localtunnel/autoconfig'
     require 'twilio-ruby'
     require 'uri'
 
-    class TwilioAutoConfig < LocalTunnel::AutoConfig::Base
-      def configure(host)
-        # set up a client to talk to the Twilio REST API
-        account_sid = # your account sid here
-        auth_token = # your auth token here
-        app_sid = # your app sid you want to update here
+    configure "twilio" do |config|
+      # set up a client to talk to the Twilio REST API
+      account_sid = # your account sid here
+      auth_token = # your auth token here
+      app_sid = # your app sid you want to update here
 
-        client = Twilio::REST::Client.new(account_sid, auth_token)
-        app = client.account.applications.get(app_sid)
+      client = Twilio::REST::Client.new(account_sid, auth_token)
+      app = client.account.applications.get(app_sid)
 
-        # Grab the current voice_url and swap out the host
-        voice = URI.parse(app.voice_url)
-        voice.host = host
+      # Grab the current voice_url and status_callback and swap out the host
+      voice = URI.parse(app.voice_url)
+      voice.host = config.host
+      status_callback = URI.parse(app.status_callback)
+      status_callback.host = config.host
 
-        app.update({:voice_url => voice.to_s})
-        puts "   Configured Twilio app #{app.friendly_name} for new host #{host}"
-      end
+      app.update({:voice_url => voice.to_s, :status_callback => status_callback.to_s})
+      puts "   Configured twilio app #{app.friendly_name} for new host #{config.host}"
     end
 
-from the command line
+Then from the command line
 
     $ cd ~/MyApp
     $ localtunnel -c twilio 9292
