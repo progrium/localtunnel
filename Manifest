@@ -1,6 +1,0 @@
-Rakefile
-lib/localtunnel.rb
-lib/localtunnel/tunnel.rb
-lib/localtunnel/net_ssh_gateway_patch.rb
-bin/localtunnel
-Manifest
