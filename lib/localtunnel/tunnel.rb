@@ -11,6 +11,8 @@ module LocalTunnel; end
 
 class LocalTunnel::Tunnel
 
+  SHELL_HOOK_FILE = "./.localtunnel_callback"
+
   attr_accessor :port, :key, :host
 
   def initialize(port, key)
@@ -44,6 +46,13 @@ class LocalTunnel::Tunnel
     gateway = Net::SSH::Gateway.new(@host, tunnel['user'])
     gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
       puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
+      if File.exists?(File.expand_path(SHELL_HOOK_FILE))
+        system "#{SHELL_HOOK_FILE} ""#{tunnel['host']}""" if File.exists?(File.expand_path(SHELL_HOOK_FILE))
+        if !$?.success?
+          puts "   An error occurred executing the callback hook #{SHELL_HOOK_FILE}"
+          puts "   (Make sure it is executable)"
+        end
+      end
       puts "   Port #{port} is now publicly accessible from http://#{tunnel['host']} ..."
       begin
         sleep 1 while true
