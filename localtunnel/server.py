@@ -93,14 +93,17 @@ class ProxyHandler(object):
 
     def handle(self):
         tunnel = self.broker.lookup(self.hostname)
-        conn = tunnel.connect()
+        conn = tunnel.create_connection()
         group = CodependentGroup([
             gevent.spawn(self._proxy_in, self.socket, conn),
             gevent.spawn(self._proxy_out, conn, self.socket),
         ])
         gevent.joinall(group.greenlets)
-        self.socket.shutdown(0)
-        self.socket.close()
+        try:
+            self.socket.shutdown(0)
+            self.socket.close()
+        except:
+            pass
     
     def _proxy_in(self, socket, conn):
         while True:
@@ -155,7 +158,7 @@ class Tunnel(object):
         self.connections = {}
         self.tunnelq = Queue()
     
-    def connect(self):
+    def create_connection(self):
         id = 0
         while id in self.connections.keys():
             id += 1
@@ -241,8 +244,9 @@ class TunnelClient(Service):
         while True:
             msg = self.ws.receive()
             if msg is None:
+                print "Trying to stop"
                 self.stop()
-            print "T>>>", msg
+            #print "T>>>", msg
             parsed = json.loads(str(msg))
             conn_id, event = parsed[0:2]
             if event == 'open':
@@ -268,14 +272,14 @@ class TunnelClient(Service):
     
     def local_send(self, conn_id, data):
         self.connections[conn_id].send(data)
-        print "S<<<", len(data)
+        #print "S<<<", len(data)
     
     def local_recv(self, conn_id):
         while True:
-            data = self.connections[conn_id].recv(4096)
+            data = self.connections[conn_id].recv(2048)
             if not data:
                 break
-            print "S>>>", len(data)
+            #print "S>>>", len(data)
             self.tunnel_send(conn_id, data)
         self.tunnel_send(conn_id, open=False)
     
@@ -286,5 +290,5 @@ class TunnelClient(Service):
             msg = [conn_id, 'data', base64.b64encode(data)]
         else:
             return
-        print "T<<<", msg
+        #print "T<<<", msg
         self.ws.send(json.dumps(msg))
