@@ -1,0 +1,9 @@
+#!/usr/bin/env python
+# EASY-INSTALL-ENTRY-SCRIPT: 'gservice','console_scripts','gservice'
+__requires__ = 'gservice'
+import sys
+from pkg_resources import load_entry_point
+
+sys.exit(
+   load_entry_point('gservice', 'console_scripts', 'gservice')()
+)

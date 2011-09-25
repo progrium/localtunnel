@@ -1,3 +1,3 @@
 #!/bin/bash
 bin/python setup.py develop
-bin/python gservice
+bin/python ./scripts/gservice -C ./config/heroku.conf.py
