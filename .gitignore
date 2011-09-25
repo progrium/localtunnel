@@ -1,3 +1,6 @@
+build
+dist
+*.egg-info
 serviced.log
 .idea
 .idea/*
