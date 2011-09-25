@@ -1,4 +1,6 @@
-port = 80
+import os
+
+port = os.environ.get("PORT", 5000)
 hostname = 'v2.localtunnel.com'
 
 def service():

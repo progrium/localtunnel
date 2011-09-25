@@ -41,8 +41,8 @@ class TunnelBroker(Service):
         
         self.tunnels = {}
     
-    def do_start(self):
-        gevent.spawn(self.visual_heartbeat)
+    #def do_start(self):
+    #    gevent.spawn(self.visual_heartbeat)
     
     def visual_heartbeat(self):
         while True:
