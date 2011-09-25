@@ -1,1 +1,1 @@
-web: ./scripts/run.sh
+web: ./scripts/run.sh ./config/heroku.conf.py

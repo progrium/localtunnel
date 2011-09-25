@@ -1,4 +1,3 @@
-#!/usr/bin/env python
 # EASY-INSTALL-ENTRY-SCRIPT: 'gservice','console_scripts','gservice'
 __requires__ = 'gservice'
 import sys

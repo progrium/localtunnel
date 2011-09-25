@@ -129,7 +129,7 @@ class TunnelHandler(UpgradableWSGIHandler):
     def __init__(self, socket, address, broker):
         UpgradableWSGIHandler.__init__(self, socket, address, broker.frontend)
         self.server.application = WebSocketUpgradeMiddleware(
-            self.handle_websocket, self.handle_http)
+            self.handle_websocket) #, self.handle_http)
         self.broker = broker
     
     def handle_http(self, environ, start_response):
