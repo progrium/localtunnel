@@ -33,7 +33,7 @@ class CodependentGroup(Group):
 
 class TunnelBroker(Service):
     port = Option('port', default=80)
-    address = Option('address', default='127.0.0.1')
+    address = Option('address', default='0.0.0.0')
     
     def __init__(self):
         self.frontend = BrokerFrontend(self)
