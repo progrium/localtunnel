@@ -134,7 +134,7 @@ class TunnelHandler(UpgradableWSGIHandler):
     
     def handle_http(self, environ, start_response):
         start_response("200 ok", [])
-        return ['hello']
+        return ['<pre>%s' % environ]
     
     def handle_websocket(self, websocket, environ):
         name = environ.get('PATH_INFO', '').split('/')[-1]
