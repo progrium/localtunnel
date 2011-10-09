@@ -6,24 +6,20 @@ from socket import MSG_PEEK
 import gevent.pywsgi
 from gevent.queue import Queue
 from gevent.pool import Group
-from gevent.socket import create_connection
 
 from gservice.config import Option
 from gservice.core import Service
 
 from ws4py.server.geventserver import UpgradableWSGIHandler
-from ws4py.client.geventclient import WebSocketClient
 from ws4py.server.wsgi.middleware import WebSocketUpgradeMiddleware
 
-def encode_data_packet(conn_id, data):
-    return ''.join([chr(conn_id), data])
+from localtunnel import encode_data_packet
+from localtunnel import decode_data_packet
 
-def decode_data_packet(data):
-    return data[0], str(data[1:])
+UpgradableWSGIHandler.upgrade_header = 'X-Upgrade'
 
 class CodependentGroup(Group):
-    """
-    A greenlet group that will kill all greenlets if a single one dies.
+    """Greenlet group that will kill all greenlets if a single one dies
     """
     def discard(self, greenlet):
         super(CodependentGroup, self).discard(greenlet)
@@ -32,6 +28,8 @@ class CodependentGroup(Group):
             gevent.spawn(self.kill)
 
 class TunnelBroker(Service):
+    """Top-level service that manages tunnels and runs the frontend"""
+    
     port = Option('port', default=80)
     address = Option('address', default='0.0.0.0')
     
@@ -59,10 +57,12 @@ class TunnelBroker(Service):
         tunnel.close()
     
     def lookup_tunnel(self, name):
-        return self.tunnels[name]
+        return self.tunnels.get(name)
 
 
 class BrokerFrontend(gevent.pywsgi.WSGIServer):
+    """Server that will manage a tunnel or proxy traffic through a tunnel"""
+    
     hostname = Option('hostname', default="localtunnel.com")
     
     def __init__(self, broker):
@@ -93,19 +93,22 @@ class BrokerFrontend(gevent.pywsgi.WSGIServer):
             handler.handle()
 
 class ProxyHandler(object):
+    """TCP-ish proxy handler"""
+    
     def __init__(self, socket, hostname, broker):
         self.socket = socket
         self.hostname = hostname
         self.broker = broker
 
     def handle(self):
-        tunnel = self.broker.lookup_tunnel(self.hostname)
-        conn = tunnel.create_connection()
-        group = CodependentGroup([
-            gevent.spawn(self._proxy_in, self.socket, conn),
-            gevent.spawn(self._proxy_out, conn, self.socket),
-        ])
-        gevent.joinall(group.greenlets)
+        tunnel = self.broker.lookup_tunnel(self.hostname.split('.')[0])
+        if tunnel:
+            conn = tunnel.create_connection()
+            group = CodependentGroup([
+                gevent.spawn(self._proxy_in, self.socket, conn),
+                gevent.spawn(self._proxy_out, conn, self.socket),
+            ])
+            gevent.joinall(group.greenlets)
         try:
             self.socket.shutdown(0)
             self.socket.close()
@@ -127,6 +130,8 @@ class ProxyHandler(object):
             socket.send(data)
 
 class TunnelHandler(UpgradableWSGIHandler):
+    """HTTP handler for opening/managing/running a tunnel (via websocket)"""
+    
     def __init__(self, socket, address, broker):
         UpgradableWSGIHandler.__init__(self, socket, address, broker.frontend)
         self.server.application = WebSocketUpgradeMiddleware(
@@ -162,10 +167,9 @@ class TunnelHandler(UpgradableWSGIHandler):
                 tunnel.dispatch(message=str(msg))
             elif msg.is_binary:
                 tunnel.dispatch(data=msg.data)
-            
-        
 
 class Tunnel(object):
+    """Server representation of a tunnel its mux'd connections"""
     def __init__(self):
         self.connections = {}
         self.tunnelq = Queue()
@@ -206,8 +210,11 @@ class Tunnel(object):
         elif data:
             conn_id, data = decode_data_packet(data)
             self.connections[conn_id].recvq.put(data)
-        
+
 class ConnectionProxy(object):
+    """Socket-like representation of connection on the other end of the tunnel
+    """
+    
     def __init__(self, id, tunnel):
         self.tunnel = tunnel
         self.id = id
@@ -233,74 +240,3 @@ class ConnectionProxy(object):
         self.recvq.put(None)
         self.send(open=False)
 
-# XXX: Yeah, obviously this should not live in server.py
-class TunnelClient(Service):
-    client_port = Option('client_port')
-    server_port = Option('port')
-    hostname = Option('hostname', default="localtunnel.com")
-    
-    def __init__(self):
-        self.ws = WebSocketClient('http://%s:%s/t/test.localtunnel.local' % 
-                    (self.hostname, self.server_port))
-        self.connections = {}
-    
-    def do_start(self):
-        self.ws.connect()
-        gevent.spawn(self.listen)
-        #gevent.spawn(self.visual_heartbeat)
-    
-    def visual_heartbeat(self):
-        while True:
-            print "."
-            gevent.sleep(1)
-    
-    def listen(self):
-        while True:
-            msg = self.ws.receive(msg_obj=True)
-            if msg is None:
-                print "Trying to stop"
-                self.stop()
-            if msg.is_text:
-                parsed = json.loads(str(msg))
-                conn_id, event = parsed[0:2]
-                if event == 'open':
-                    self.local_open(conn_id)
-                elif event == 'closed':
-                    self.local_close(conn_id)
-            elif msg.is_binary:
-                conn_id, data = decode_data_packet(msg.data)
-                self.local_send(conn_id, data)
-                
-    def local_open(self, conn_id):
-        socket = create_connection(('127.0.0.1', self.client_port))
-        self.connections[conn_id] = socket
-        gevent.spawn(self.local_recv, conn_id)
-    
-    def local_close(self, conn_id):
-        socket = self.connections.pop(conn_id)
-        try:
-            socket.shutdown(0)
-            socket.close()
-        except:
-            pass
-    
-    def local_send(self, conn_id, data):
-        self.connections[conn_id].send(data)
-    
-    def local_recv(self, conn_id):
-        while True:
-            data = self.connections[conn_id].recv(4096)
-            if not data:
-                break
-            self.tunnel_send(conn_id, data)
-        self.tunnel_send(conn_id, open=False)
-    
-    def tunnel_send(self, conn_id, data=None, open=None):
-        if open is False:
-            msg = [conn_id, 'closed']
-            self.ws.send(json.dumps(msg))
-        elif data:
-            msg = encode_data_packet(conn_id, data)
-            self.ws.send(msg, binary=True)
-        else:
-            return

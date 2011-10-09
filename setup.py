@@ -11,4 +11,7 @@ setup(
     packages=find_packages(),
     install_requires=['gservice', 'ws4py'],
     data_files=[],
+    entry_points={
+        'console_scripts': [
+            'lt = localtunnel.client:main',]},
 )
