@@ -1,5 +1,5 @@
 git+git://github.com/progrium/gservice.git#egg=gservice
-git+git://github.com/progrium/WebSocket-for-Python.git#egg=ws4py
+git+git://github.com/progrium/WebSocket-for-Python.git#egg=ws4py-dev
 gevent==0.13.3
 greenlet==0.3.1
 lockfile==0.9.1
