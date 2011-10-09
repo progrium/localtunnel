@@ -49,16 +49,16 @@ class TunnelBroker(Service):
             print "."
             gevent.sleep(1)
     
-    def open(self, name):
+    def open_tunnel(self, name):
         tunnel = Tunnel()
         self.tunnels[name] = tunnel
         return tunnel
     
-    def close(self, name):
+    def close_tunnel(self, name):
         tunnel = self.tunnels.pop(name)
         tunnel.close()
     
-    def lookup(self, name):
+    def lookup_tunnel(self, name):
         return self.tunnels[name]
 
 
@@ -73,6 +73,7 @@ class BrokerFrontend(gevent.pywsgi.WSGIServer):
     def handle(self, socket, address):
         hostname = ''
         hostheader = re.compile('host: ([^\(\);:,<>]+)', re.I)
+        # Peek up to 512 bytes into data for the Host header
         for n in [128, 256, 512]:
             bytes = socket.recv(n, MSG_PEEK)
             if not bytes:
@@ -98,7 +99,7 @@ class ProxyHandler(object):
         self.broker = broker
 
     def handle(self):
-        tunnel = self.broker.lookup(self.hostname)
+        tunnel = self.broker.lookup_tunnel(self.hostname)
         conn = tunnel.create_connection()
         group = CodependentGroup([
             gevent.spawn(self._proxy_in, self.socket, conn),
@@ -138,21 +139,19 @@ class TunnelHandler(UpgradableWSGIHandler):
     
     def handle_websocket(self, websocket, environ):
         name = environ.get('PATH_INFO', '').split('/')[-1]
-        tunnel = self.broker.open(name)
+        tunnel = self.broker.open_tunnel(name)
         group = CodependentGroup([
             gevent.spawn(self._tunnel_in, tunnel, websocket),
             gevent.spawn(self._tunnel_out, websocket, tunnel),
         ])
         gevent.joinall(group.greenlets)
-        self.broker.close(name)
+        self.broker.close_tunnel(name)
         websocket.close()
     
     def _tunnel_in(self, tunnel, websocket):
         for type, msg in tunnel:
-            if type == 'binary':
-                websocket.send(msg, binary=True)
-            elif type == 'text':
-                websocket.send(msg)
+            binary = bool(type == 'binary')
+            websocket.send(msg, binary=binary)
     
     def _tunnel_out(self, websocket, tunnel):
         while True:
