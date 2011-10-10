@@ -3,6 +3,7 @@ import uuid
 
 import gevent
 from gevent.socket import create_connection
+from gevent.coros import Semaphore
 
 from gservice.config import Option
 from gservice.core import Service
@@ -36,6 +37,8 @@ class TunnelClient(Service):
         self.local_port = local_port
         self.ws = WebSocketClient('http://%s/t/%s' % (broker_address, name))
         self.connections = {}
+        self.bytes_sent = {}
+        self._send_lock = Semaphore()
     
     def do_start(self):
         self.ws.connect()
@@ -55,6 +58,7 @@ class TunnelClient(Service):
                 self.stop()
             if msg.is_text:
                 parsed = json.loads(str(msg))
+                print str(msg)
                 conn_id, event = parsed[0:2]
                 if event == 'open':
                     self.local_open(conn_id)
@@ -67,12 +71,14 @@ class TunnelClient(Service):
     def local_open(self, conn_id):
         socket = create_connection(('0.0.0.0', self.local_port))
         self.connections[conn_id] = socket
+        self.bytes_sent[conn_id] = 0
         gevent.spawn(self.local_recv, conn_id)
     
     def local_close(self, conn_id):
         socket = self.connections.pop(conn_id)
+        print "Sent %s" % self.bytes_sent.pop(conn_id)
         try:
-            socket.shutdown(0)
+            #socket.shutdown(0)
             socket.close()
         except:
             pass
@@ -82,7 +88,7 @@ class TunnelClient(Service):
     
     def local_recv(self, conn_id):
         while True:
-            data = self.connections[conn_id].recv(4096)
+            data = self.connections[conn_id].recv(1024)
             if not data:
                 break
             self.tunnel_send(conn_id, data)
@@ -91,9 +97,12 @@ class TunnelClient(Service):
     def tunnel_send(self, conn_id, data=None, open=None):
         if open is False:
             msg = [conn_id, 'closed']
-            self.ws.send(json.dumps(msg))
+            with self._send_lock:
+                self.ws.send(json.dumps(msg))
         elif data:
             msg = encode_data_packet(conn_id, data)
-            self.ws.send(msg, binary=True)
+            with self._send_lock:
+                self.ws.send(msg, binary=True)
+            self.bytes_sent[conn_id] += len(data)
         else:
             return
