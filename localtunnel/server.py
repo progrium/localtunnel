@@ -129,7 +129,13 @@ class ProxyHandler(object):
             data = conn.recv()
             if data is None:
                 return
-            self.bytes_sent += socket.send(data)
+            total_sent = 0
+            while total_sent < len(data):
+                sent = socket.send(data[total_sent:])
+                if sent == 0:
+                    return
+                total_sent += sent
+            self.bytes_sent += total_sent
             
 
 class TunnelHandler(UpgradableWSGIHandler):
