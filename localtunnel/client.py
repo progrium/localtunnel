@@ -37,7 +37,6 @@ class TunnelClient(Service):
         self.local_port = local_port
         self.ws = WebSocketClient('http://%s/t/%s' % (broker_address, name))
         self.connections = {}
-        self.bytes_sent = {}
         self._send_lock = Semaphore()
     
     def do_start(self):
@@ -71,14 +70,12 @@ class TunnelClient(Service):
     def local_open(self, conn_id):
         socket = create_connection(('0.0.0.0', self.local_port))
         self.connections[conn_id] = socket
-        self.bytes_sent[conn_id] = 0
         gevent.spawn(self.local_recv, conn_id)
     
     def local_close(self, conn_id):
         socket = self.connections.pop(conn_id)
-        print "Sent %s" % self.bytes_sent.pop(conn_id)
         try:
-            #socket.shutdown(0)
+            socket.shutdown(0)
             socket.close()
         except:
             pass
@@ -103,6 +100,5 @@ class TunnelClient(Service):
             msg = encode_data_packet(conn_id, data)
             with self._send_lock:
                 self.ws.send(msg, binary=True)
-            self.bytes_sent[conn_id] += len(data)
         else:
             return

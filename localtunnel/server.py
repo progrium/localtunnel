@@ -102,7 +102,6 @@ class ProxyHandler(object):
 
     def handle(self):
         tunnel = self.broker.lookup_tunnel(self.hostname.split('.')[0])
-        self.bytes_sent = 0
         if tunnel:
             conn = tunnel.create_connection()
             group = CodependentGroup([
@@ -111,8 +110,7 @@ class ProxyHandler(object):
             ])
             gevent.joinall(group.greenlets)
         try:
-            print "Bytes sent %s" % self.bytes_sent
-            #self.socket.shutdown(0)
+            self.socket.shutdown(0)
             self.socket.close()
         except:
             pass
@@ -129,13 +127,7 @@ class ProxyHandler(object):
             data = conn.recv()
             if data is None:
                 return
-            total_sent = 0
-            while total_sent < len(data):
-                sent = socket.send(data[total_sent:])
-                if sent == 0:
-                    return
-                total_sent += sent
-            self.bytes_sent += total_sent
+            socket.sendall(data)
             
 
 class TunnelHandler(UpgradableWSGIHandler):
@@ -218,7 +210,6 @@ class Tunnel(object):
                 conn.close()
         elif data:
             conn_id, data = decode_data_packet(data)
-            self.connections[conn_id].bytes_recvd += len(data)
             self.connections[conn_id].recvq.put(data)
 
 class ConnectionProxy(object):
@@ -228,7 +219,6 @@ class ConnectionProxy(object):
     def __init__(self, id, tunnel):
         self.tunnel = tunnel
         self.id = id
-        self.bytes_recvd = 0
         self.recvq = Queue()
         self.send(open=True)
     
@@ -250,5 +240,4 @@ class ConnectionProxy(object):
     def close(self):
         self.recvq.put(None)
         self.send(open=False)
-        print "Received %s" % self.bytes_recvd
 
