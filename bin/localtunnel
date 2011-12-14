@@ -34,8 +34,8 @@ options = OptionParser.new do |o|
   o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
     key = File.exist?(k.to_s) ? File.open(k).read : nil
   end
-  o.on("-u", "--user {user-name}:{password}", "authentication to use when uploading public key") do |auth|
-    auth = auth.split(':')
+  o.on("-u", "--user {user-name}:{password}", "authentication to use when uploading public key") do |a|
+    auth = a.split(':')
   end
   o.on("-s", "--service URL", "service url to use") do |u|
     url = u
