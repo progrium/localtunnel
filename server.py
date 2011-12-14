@@ -1,22 +1,19 @@
-try:
-    from twisted.internet import pollreactor
-    pollreactor.install()
-except: pass
-from twisted.internet import protocol, reactor, defer, task
-from twisted.web import http, proxy, resource, server
-from twisted.python import log
-import sys, time
-import urlparse
-import socket
-import simplejson
+#!/usr/bin/env python
 import re
+import sys
+import socket
+import time
 
-SSH_USER = 'localtunnel'
-AUTHORIZED_KEYS = '/home/localtunnel/.ssh/authorized_keys'
-PORT_RANGE = [32000, 64000]
-BANNER = "This localtunnel service is brought to you by Twilio."
+import simplejson
+from twisted.application import internet
+from twisted.python import log
+from twisted.web import proxy, server
+
 SSH_OPTIONS = 'command="/bin/echo Shell access denied",no-agent-forwarding,no-pty,no-user-rc,no-X11-forwarding '
 KEY_REGEX = re.compile(r'^ssh-(\w{3}) [^\n]+$')
+AUTHORIZED_KEYS_FMT = '/home/{}/.ssh/authorized_keys'
+BANNER = "This localtunnel service is brought to you by {}."
+PORT_RANGE = [32000, 64000]
 
 def port_available(port):
     try:
@@ -24,17 +21,21 @@ def port_available(port):
         return False
     except socket.error:
         return True
-    
-def baseN(num,b=32,numerals="23456789abcdefghijkmnpqrstuvwxyz"): 
+
+def baseN(num, b=32, numerals="23456789abcdefghijkmnpqrstuvwxyz"): 
     return ((num == 0) and  "0" ) or (baseN(num // b, b).lstrip("0") + numerals[num % b])
 
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     isLeaf = True
     
-    def __init__(self, user, host='127.0.0.1'):
+    def __init__(self, user, host_name, address, provider):
         self.user = user
+        self.host_name = host_name
+        self.host_sub_name = self.host_name.split('.')[0]
+        self.authorized_keys = AUTHORIZED_KEYS_FMT.format(self.user)
         self.tunnels = {}
-        proxy.ReverseProxyResource.__init__(self, host, None, None)
+        self.banner = BANNER.format(provider)
+        proxy.ReverseProxyResource.__init__(self, address, None, None)
     
     def find_tunnel_name(self):
         name = baseN(abs(hash(time.time())))[0:4]
@@ -42,7 +43,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             time.sleep(0.1)
             return self.find_tunnel_name()
         return name
-        
+    
     def find_tunnel_port(self):
         port = PORT_RANGE[0]
         start_time = time.time()
@@ -62,45 +63,60 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         if not KEY_REGEX.match(key.strip()):
             return False
         key = ''.join([SSH_OPTIONS, key.strip(), "\n"])
-        fr = open(AUTHORIZED_KEYS, 'r')
+        fr = open(self.authorized_keys, 'r')
         if not key in fr.readlines():
-            fa = open(AUTHORIZED_KEYS, 'a')
+            fa = open(self.authorized_keys, 'a')
             fa.write(key)
             fa.close()
         fr.close()
         return True
     
     def register_tunnel(self, superhost, key=None):
-        if key and not self.install_key(key): return simplejson.dumps(dict(error="Invalid key."))
+        if key and not self.install_key(key):
+            return simplejson.dumps(dict(error="Invalid key."))
         name = self.find_tunnel_name()
         port = self.find_tunnel_port()
         self.tunnels[name] = port
         return simplejson.dumps(
-            dict(through_port=port, user=self.user, host='%s.%s' % (name, superhost), banner=BANNER))
+            dict(through_port=port,
+                 user=self.user, host='%s.%s' % (name, superhost),
+                 banner=self.banner))
     
     def render(self, request):
         host = request.getHeader('host')
         name, superhost = host.split('.', 1)
-        if host.startswith('open.'):
+        if host.startswith(self.host_sub_name):
             request.setHeader('Content-Type', 'application/json')
             return self.register_tunnel(superhost, request.args.get('key', [None])[0])
         else:
-            if not name in self.tunnels: return "Not found"
-        
+            if not name in self.tunnels:
+                return "Not found"
             request.content.seek(0, 0)
             clientFactory = self.proxyClientFactoryClass(
-                request.method, request.uri, request.clientproto,
-                request.getAllHeaders(), request.content.read(), request)
+                                request.method,
+                                request.uri,
+                                request.clientproto,
+                                request.getAllHeaders(),
+                                request.content.read(),
+                                request)
             self.reactor.connectTCP(self.host, self.tunnels[name], clientFactory)
             return server.NOT_DONE_YET
 
-#if 'location' in request.responseHeaders and host in request.responseHeaders['location']:
-#    # Strip out the port they think they need
-#    p = re.compile(r'%s\:\d+' % host)
-#    location = p.sub(host, request.responseHeaders['location'])
-#    request.responseHeaders['location'] = location
+def getWebService(user, host_name, address, port, provider):
+    proxy = LocalTunnelReverseProxy(user, host_name, address, provider)
+    proxySite = server.Site(proxy)
+    return internet.TCPServer(port, proxySite)
 
-        
-log.startLogging(sys.stdout)
-reactor.listenTCP(80, server.Site(LocalTunnelReverseProxy(SSH_USER)))
-reactor.run()
+if __name__ == '__main__':
+    import getpass
+    
+    from twisted.internet import reactor
+    
+    log.startLogging(sys.stdout)
+    proxyServer = server.Site(LocalTunnelReverseProxy(
+        user=getpass.getuser(),
+        host_name='my.localtunnel.com',
+        address='127.0.0.1',
+        provider='noone'))
+    reactor.listenTCP(8080, proxyServer)
+    reactor.run()

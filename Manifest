@@ -1,6 +1,8 @@
-Rakefile
-lib/localtunnel.rb
-lib/localtunnel/tunnel.rb
-lib/localtunnel/net_ssh_gateway_patch.rb
-bin/localtunnel
 Manifest
+README.rdoc
+Rakefile
+bin/localtunnel
+lib/localtunnel.rb
+lib/localtunnel/net_ssh_gateway_patch.rb
+lib/localtunnel/tunnel.rb
+localtunnel.gemspec
