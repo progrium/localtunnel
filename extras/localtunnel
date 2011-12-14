@@ -1,0 +1,101 @@
+#!/bin/sh
+#
+# localtunnel - this script starts and stops the localtunnel daemon
+#
+# chkconfig: - 85 15
+# description: localtunnel
+# processname: localtunnel
+# config: /home/deploy/localtunnel/config
+# pidfile: /var/run/localtunnel/localtunnel.pid
+# lockfile: /var/lock/subsys/localtunnel/localtunnel
+
+# source function library.
+. /etc/rc.d/init.d/functions
+
+# source networking configuration.
+. /etc/sysconfig/network
+
+# check that networking is up.
+[ "$NETWORKING" = "no" ] && exit 0
+
+NAME=localtunnel
+USER=deploy
+PROG="/home/$USER/localtunneld"
+PIDFILE="/var/run/localtunnel/localtunnel.pid"
+LOCKFILE=/var/lock/subsys/localtunnel/localtunnel
+PATH=/usr/local/sbin:/usr/local/bin:/sbin:/bin:/usr/sbin:/usr/bin
+
+start() {
+    [ -x $PROG ] || exit 5
+    echo -n $"Starting $NAME: "
+    if [ "$(id -u)" != "0" ]; then
+        daemon --pidfile $PIDFILE $PROG
+    else
+        daemon --pidfile $PIDFILE --user $USER $PROG
+    fi
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && touch $LOCKFILE
+    return $retval
+}
+
+stop() {
+    echo -n $"Stopping $NAME: "
+    killproc -p $PIDFILE $NAME
+    retval=$?
+    echo
+    [ $retval -eq 0 ] && rm -f $LOCKFILE
+    return $retval
+}
+
+restart() {
+    stop
+    start
+}
+
+reload() {
+    echo -n $"Reloading $NAME: "
+    killproc -p $PIDFILE $NAME -HUP
+    echo
+}
+
+force_reload() {
+    restart
+}
+
+rh_status() {
+    status -p $PIDFILE $NAME
+}
+
+rh_status_q() {
+    rh_status >/dev/null 2>&1
+}
+
+case "$1" in
+    start)
+        rh_status_q && exit 0
+        $1
+        ;;
+    stop)
+        rh_status_q || exit 0
+        $1
+        ;;
+    restart)
+        $1
+        ;;
+    reload)
+        $1
+        ;;
+    force-reload)
+        force_reload
+        ;;
+    status)
+        rh_status
+        ;;
+    cond-restart|try-restart)
+        rh_status_q || exit 0
+        ;;
+    *)
+        echo $"Usage: $0 {start|stop|status|restart|cond-restart|try-restart|force-reload}"
+        exit 2
+esac

@@ -1,0 +1,7 @@
+#!/bin/bash
+
+export HOME=/home/deploy
+source $HOME/.bashrc
+cd $HOME/localtunnel
+workon localtunnel
+twistd -y ../localtunnel.tac
