@@ -7,7 +7,8 @@ import time
 import simplejson
 from twisted.application import internet
 from twisted.python import log
-from twisted.web import proxy, server
+from twisted.web import proxy, server, http
+from twisted.web.resource import ErrorPage, NoResource
 
 SSH_OPTIONS = 'command="/bin/echo Shell access denied",no-agent-forwarding,no-pty,no-user-rc,no-X11-forwarding '
 KEY_REGEX = re.compile(r'^ssh-(\w{3}) [^\n]+$')
@@ -28,7 +29,7 @@ def baseN(num, b=32, numerals="23456789abcdefghijkmnpqrstuvwxyz"):
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     isLeaf = True
     
-    def __init__(self, user, host_name, address, provider, strip_subdomain=True):
+    def __init__(self, user, host_name, address, provider, strip_subdomain=True, auth=None):
         self.user = user
         self.host_name = host_name
         self.host_sub_name = self.host_name.split('.')[0]
@@ -36,6 +37,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         self.tunnels = {}
         self.banner = BANNER.format(provider)
         self.strip_subdomain = strip_subdomain
+        self.auth = auth 
         proxy.ReverseProxyResource.__init__(self, address, None, None)
     
     def find_tunnel_name(self):
@@ -52,7 +54,8 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             if time.time()-start_time > 3:
                 raise Exception("No port available")
             port += 1
-            if port >= PORT_RANGE[1]: port = PORT_RANGE[0]
+            if port >= PORT_RANGE[1]:
+                port = PORT_RANGE[0]
         return port
     
     def garbage_collect(self):
@@ -83,33 +86,47 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
                  user=self.user, host='%s.%s' % (name, superhost),
                  banner=self.banner))
     
-    def render(self, request):
+    def render(self, request):        
         host = request.getHeader('host')
         if self.strip_subdomain:
-            name, superhost = host.split('.', 1)
+            parts = host.split('.', 1)
+            name, superhost = ('', host) if len(parts) == 1 else parts
         else:
-            name = host.split('.', 1)[0]
+            parts = host.split('.', 1)
+            name = '' if len(parts) == 1 else parts[0] 
             superhost = host
         if host.startswith(self.host_sub_name):
+            if self.auth:
+                user = request.getUser()
+                password = request.getPassword()
+                if not user or not password or not self.auth(user, password):
+                    request.setHeader('WWW-Authenticate', 'Basic realm="www"')
+                    page = ErrorPage(http.UNAUTHORIZED, 'Authorization Required', '')
+                    return page.render(request)
             request.setHeader('Content-Type', 'application/json')
             return self.register_tunnel(superhost, request.args.get('key', [None])[0])
         else:
             if not name in self.tunnels:
-                return "Not found"
+                return NoResource().render(request)
             request.content.seek(0, 0)
             clientFactory = self.proxyClientFactoryClass(
-                                request.method,
-                                request.uri,
-                                request.clientproto,
-                                request.getAllHeaders(),
-                                request.content.read(),
-                                request)
+                request.method,
+                request.uri,
+                request.clientproto,
+                request.getAllHeaders(),
+                request.content.read(),
+                request)
             self.reactor.connectTCP(self.host, self.tunnels[name], clientFactory)
             return server.NOT_DONE_YET
 
-def getWebService(user, host_name, address, port, provider, strip_subdomain):
-    proxy = LocalTunnelReverseProxy(user, host_name, address, provider, strip_subdomain)
-    proxySite = server.Site(proxy)
+def getWebService(user, host_name, address, port, provider, strip_subdomain, auth):
+    proxySite = server.Site(LocalTunnelReverseProxy(
+        user,
+        host_name,
+        address,
+        provider,
+        strip_subdomain,
+        auth))
     return internet.TCPServer(port, proxySite)
 
 if __name__ == '__main__':
