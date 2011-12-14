@@ -28,13 +28,14 @@ def baseN(num, b=32, numerals="23456789abcdefghijkmnpqrstuvwxyz"):
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     isLeaf = True
     
-    def __init__(self, user, host_name, address, provider):
+    def __init__(self, user, host_name, address, provider, strip_subdomain=True):
         self.user = user
         self.host_name = host_name
         self.host_sub_name = self.host_name.split('.')[0]
         self.authorized_keys = AUTHORIZED_KEYS_FMT.format(self.user)
         self.tunnels = {}
         self.banner = BANNER.format(provider)
+        self.strip_subdomain = strip_subdomain
         proxy.ReverseProxyResource.__init__(self, address, None, None)
     
     def find_tunnel_name(self):
@@ -84,7 +85,11 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     
     def render(self, request):
         host = request.getHeader('host')
-        name, superhost = host.split('.', 1)
+        if self.strip_subdomain:
+            name, superhost = host.split('.', 1)
+        else:
+            name = host.split('.', 1)[0]
+            superhost = host
         if host.startswith(self.host_sub_name):
             request.setHeader('Content-Type', 'application/json')
             return self.register_tunnel(superhost, request.args.get('key', [None])[0])
@@ -102,8 +107,8 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             self.reactor.connectTCP(self.host, self.tunnels[name], clientFactory)
             return server.NOT_DONE_YET
 
-def getWebService(user, host_name, address, port, provider):
-    proxy = LocalTunnelReverseProxy(user, host_name, address, provider)
+def getWebService(user, host_name, address, port, provider, strip_subdomain):
+    proxy = LocalTunnelReverseProxy(user, host_name, address, provider, strip_subdomain)
     proxySite = server.Site(proxy)
     return internet.TCPServer(port, proxySite)
 
@@ -115,8 +120,9 @@ if __name__ == '__main__':
     log.startLogging(sys.stdout)
     proxyServer = server.Site(LocalTunnelReverseProxy(
         user=getpass.getuser(),
-        host_name='my.localtunnel.com',
+        host_name='localtunnel.poundpay.com',
         address='127.0.0.1',
-        provider='noone'))
+        provider='noone',
+        strip_subdomain=True))
     reactor.listenTCP(8080, proxyServer)
     reactor.run()
