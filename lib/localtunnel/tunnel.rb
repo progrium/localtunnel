@@ -29,7 +29,6 @@ class LocalTunnel::Tunnel
       http = Net::HTTP.new(uri.host, uri.port)
       http.use_ssl = uri.scheme == 'https'
       req = Net::HTTP::Post.new(uri.request_uri) 
-      puts @auth
       if @auth
         req.basic_auth(@auth[0], @auth[1])
       end
