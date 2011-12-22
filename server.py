@@ -137,7 +137,7 @@ if __name__ == '__main__':
     log.startLogging(sys.stdout)
     proxyServer = server.Site(LocalTunnelReverseProxy(
         user=getpass.getuser(),
-        host_name='localtunnel.poundpay.com',
+        host_name='localtunnel.noone.com',
         address='127.0.0.1',
         provider='noone',
         strip_subdomain=True))
