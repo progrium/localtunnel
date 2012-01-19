@@ -14,15 +14,17 @@ or to get the source:
 
     git clone http://github.com/progrium/localtunnel.git
 
-== Usage
+== Client Usage
 
     localtunnel [options] <localport>
-      -k, --key FILE    upload a public key for authentication
-
-Localtunnel is a client to a free and open source reverse tunneling
-service made specifically for web traffic. It's intended to be used to
-temporarily expose local web servers to the greater Internet for
-debugging, unit tests, demos, etc.   
+      -k, --key FILE                    upload a public key for authentication
+      -u, --user {user-name}:{password} authentication to use when uploading public key
+      -s, --service URL                 service url to use
+      -h, --help                        show this help
+      
+Localtunnel is a client to a reverse tunneling service made specifically for
+web traffic. It's intended to be used to temporarily expose local web servers
+to the greater Internet for debugging, unit tests, demos, etc.   
 
 This is how you make your local port 8080 public:
 
@@ -32,8 +34,9 @@ This is how you make your local port 8080 public:
 Using localtunnel is comparable to using SSH reverse/remote port
 forwarding on a remote host that has GatewayPorts enabled, but without
 all the configuration or the need of a host. The localtunnel command
-works with a server component that is running on localtunnel.com,
-which is provided as a free service.
+works with a server component which by default is running on localtunnel.com
+and is provided as a free service. However you can optionally specify a
+different service.
 
 If you have never run localtunnel before, you'll need to upload a public
 key to authenticate. You do this once:
@@ -46,6 +49,32 @@ Localtunnel can be started before or after the local web server.   It
 tunnels through to the url given in that status message "publicly
 accessible from..." for as long as the command is running.  The tunnel
 is closed if the command exits.
+
+== Server Usage
+
+By default localtunnel uses the free service localtunnel.com. However you can
+use server.py, a twisted reverse proxy web server, to host a localtunnel
+service yourself as follows:
+
+    $ ./server.py
+    
+    2011-12-21 23:01:19-0800 [-] Log opened.
+    2011-12-21 23:01:19-0800 [-] twisted.web.server.Site starting on 8080
+    2011-12-21 23:01:19-0800 [-] Starting factory <twisted.web.server.Site instance at 0x2b4f6c8>
+    2011-12-21 23:01:24-0800 [-] Received SIGINT, shutting down.
+    2011-12-21 23:01:24-0800 [twisted.web.server.Site] (TCP Port 8080 Closed)
+    2011-12-21 23:01:24-0800 [twisted.web.server.Site] Stopping factory <twisted.web.server.Site instance at 0x2b4f6c8>
+    2011-12-21 23:01:24-0800 [-] Main loop terminated.
+    
+If you intend to host your own localtunnel service you may want to run the
+server as a system service. To help with that refer to the following files:
+
+    contrib/localhost     - Example init.d script for running localtunnel as a
+                            service.
+    contrib/localhost.tac - A twisted application conf file used by
+                            contrib/tunneld. 
+    contrib/tunneld       - Example script for running localtunnel as a
+                            service. Used by contrib/localhost.
 
 == Contributors
 

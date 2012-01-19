@@ -15,18 +15,33 @@ class LocalTunnel::Tunnel
 
   attr_accessor :port, :key, :host
 
-  def initialize(port, key)
+  def initialize(url, port, key, auth)
+    @url = url
     @port = port
     @key  = key
+    @auth = auth
     @host = ""
   end
 
-  def register_tunnel(key=@key)
-    url = URI.parse("http://open.localtunnel.com/")
-    if key
-      resp = JSON.parse(Net::HTTP.post_form(url, {"key" => key}).body)
+  def register_tunnel
+    uri = URI.parse(@url)
+    if @key
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == 'https'
+      req = Net::HTTP::Post.new(uri.request_uri) 
+      if @auth
+        req.basic_auth(@auth[0], @auth[1])
+      end
+      req.set_form_data({"key" => @key})
+      resp = JSON.parse(http.request(req).body)
     else
-      resp = JSON.parse(Net::HTTP.get(url))
+      http = Net::HTTP.new(uri.host, uri.port)
+      http.use_ssl = uri.scheme == 'https'
+      req = Net::HTTP::Get.new(uri.request_uri)
+      if @auth
+        req.basic_auth(@auth[0], @auth[1])
+      end
+      resp = JSON.parse(http.request(req).body)
     end
     if resp.has_key? 'error'
       puts "   [Error] #{resp['error']}"
@@ -35,9 +50,6 @@ class LocalTunnel::Tunnel
     @host = resp['host'].split(':').first
     @tunnel = resp
     return resp
-  rescue
-    puts "   [Error] Unable to register tunnel. Perhaps service is down?"
-    exit
   end
 
   def start_tunnel

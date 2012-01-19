@@ -26,11 +26,19 @@ require 'rubygems'
 require 'optparse'
 require 'localtunnel'
 
+url = "http://open.localtunnel.com/"
 key = nil
+auth = nil
 options = OptionParser.new do |o|
   o.banner = "Usage: localtunnel [options] <localport>"
   o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
     key = File.exist?(k.to_s) ? File.open(k).read : nil
+  end
+  o.on("-u", "--user {user-name}:{password}", "authentication to use when uploading public key") do |a|
+    auth = a.split(':')
+  end
+  o.on("-s", "--service URL", "service url to use") do |u|
+    url = u
   end
   o.on('-h', "--help", "show this help") { puts o; exit }
 end
@@ -42,6 +50,6 @@ unless local_port.to_i.between?(1, 65535)
   exit
 end
 
-t = LocalTunnel::Tunnel.new(local_port, key)
+t = LocalTunnel::Tunnel.new(url, local_port, key, auth)
 t.register_tunnel
 t.start_tunnel
