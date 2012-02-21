@@ -28,7 +28,12 @@ require 'localtunnel'
 
 key = nil
 options = OptionParser.new do |o|
-  o.banner = "Usage: localtunnel [options] <localport>"
+  o.banner = 
+    "Usage: localtunnel [options] <localport>\n\n" +
+    "The file .localtunnel_callback, if it exists in the current working directory,\n"+
+    "will be executed with the tunnel endpoint as the first argument once the \n" +
+    "tunnel is started\n\n"
+  
   o.on("-k", "--key FILE", "upload a public key for authentication") do |k|
     key = File.exist?(k.to_s) ? File.open(k).read : nil
   end
