@@ -47,7 +47,7 @@ class LocalTunnel::Tunnel
     gateway.open_remote(port.to_i, '127.0.0.1', tunnel['through_port'].to_i) do |rp,rh|
       puts "   " << tunnel['banner'] if tunnel.has_key? 'banner'
       if File.exists?(File.expand_path(SHELL_HOOK_FILE))
-        system "#{SHELL_HOOK_FILE} ""#{tunnel['host']}""" if File.exists?(File.expand_path(SHELL_HOOK_FILE))
+        system "#{File.expand_path(SHELL_HOOK_FILE)} ""#{tunnel['host']}""" 
         if !$?.success?
           puts "   An error occurred executing the callback hook #{SHELL_HOOK_FILE}"
           puts "   (Make sure it is executable)"
