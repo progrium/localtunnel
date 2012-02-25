@@ -47,6 +47,11 @@ tunnels through to the url given in that status message "publicly
 accessible from..." for as long as the command is running.  The tunnel
 is closed if the command exits.
 
+Localtunnel will search for the file .localtunnel_callback in the CWD.
+If it exists, it will execute the file with one argument, the public 
+endpoint, when the tunnel is opened. This is useful for starting other
+tools or processes that need the name of the endpoint.
+
 == Contributors
 
     andyl (andy@r210.com) 
