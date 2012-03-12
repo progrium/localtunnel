@@ -66,7 +66,7 @@ class LocalTunnel::Tunnel
     puts "   Failed to authenticate. If this is your first tunnel, you need to"
     puts "   upload a public key using the -k option. Try this:\n\n"
     puts "   localtunnel -k #{possible_key ? possible_key : '~/path/to/key.pub'} #{port}\n\n"
-    puts "   Don't have a key? Try http://bit.ly/createsshkey"
+    puts "   Don't have a key? Check out http://bit.ly/createsshkey"
     exit
   end
 end
