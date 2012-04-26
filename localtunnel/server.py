@@ -186,7 +186,7 @@ class Tunnel(object):
         return conn
     
     def close(self):
-        for conn_id in self.connections:
+        for conn_id in self.connections[:]:
             conn = self.connections.pop(conn_id)
             conn.close()
     
