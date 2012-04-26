@@ -17,7 +17,7 @@ from ws4py.server.wsgi.middleware import WebSocketUpgradeMiddleware
 from localtunnel import encode_data_packet
 from localtunnel import decode_data_packet
 
-UpgradableWSGIHandler.upgrade_header = 'X-Upgrade'
+#UpgradableWSGIHandler.upgrade_header = 'X-Upgrade'
 
 class CodependentGroup(Group):
     """Greenlet group that will kill all greenlets if a single one dies
