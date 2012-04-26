@@ -1,0 +1,3 @@
+www:
+  type: custom
+  buildscript: builder

@@ -1,2 +1,0 @@
-worker:
-  type: python-worker
