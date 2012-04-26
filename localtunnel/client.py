@@ -12,7 +12,7 @@ from ws4py.client.geventclient import WebSocketClient
 from localtunnel import encode_data_packet
 from localtunnel import decode_data_packet
 
-WebSocketClient.upgrade_header = 'X-Upgrade'
+#WebSocketClient.upgrade_header = 'X-Upgrade'
 
 def main():
     import argparse
