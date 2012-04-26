@@ -1,6 +1,6 @@
 import os
 
 port = int(os.environ.get("PORT", 5000))
-hostname = 'v2.localtunnel.com'
+hostname = 'localtunnel.heroku'
 
 service = 'localtunnel.server.TunnelBroker'
