@@ -1,0 +1,45 @@
+How to use v2:
+
+First:
+
+python setup.py develop
+
+(Alternatively you can do install instead of develop)
+
+Now run some web app locally on, say, port 8000. If you have nothing,
+run this in some directory:
+
+python -m SimpleHTTPServer 8000
+
+Localtunnel does some stuff with the hostname, so you want to set up two
+hostnames. One for localtunnel registration, one for your localtunnel.
+Normally it expects a wildcard, but we'll just hardcode a hostname for
+this example tunnel.
+
+example.localtunnel.local -> 127.0.0.1
+localtunnel.local -> 127.0.0.1
+
+You can do this in /etc/hosts or use that fancy ghost utility.
+
+Now you can start the server. It's based on a configuration file in the
+config directory. You can make your own, but this one is configured to
+run the server on port 9999 and expects the hostname localtunnel.local
+
+ginkgo config/default.conf.py
+
+Like your web app or SimpleHTTPServer, you'll want to leave this
+running. The client is installed as a command called "lt". You use this
+to make the tunnel. We have to specify the broker address, and the name
+of the tunnel:
+
+lt --broker 127.0.0.1:9999 --name example 8000
+
+Leave this running. Now you should be able to browse to:
+
+http://example.localtunnel.local:9999
+
+And you should see the same thing as you would at:
+
+http://localhost:8000
+
+THE END
