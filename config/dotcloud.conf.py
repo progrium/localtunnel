@@ -1,6 +1,6 @@
 import os
 
 port = int(os.environ.get("PORT_WWW", 5000))
-hostname = 'localtunnel-progrium.dotcloud.com'
+hostname = 'v2.localtunnel.com'
 
 service = 'localtunnel.server.TunnelBroker'
