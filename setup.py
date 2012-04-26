@@ -9,7 +9,7 @@ setup(
     author_email='jeff.lindsay@twilio.com',
     description='',
     packages=find_packages(),
-    install_requires=['Ginkgo', 'ws4py'],
+    install_requires=['ginkgo', 'ws4py'],
     data_files=[],
     entry_points={
         'console_scripts': [
