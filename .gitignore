@@ -1,4 +1,6 @@
 bin
+*.pyc
+**/*.pyc
 build
 dist
 *.egg-info

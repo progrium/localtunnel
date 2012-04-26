@@ -5,8 +5,7 @@ import gevent
 from gevent.socket import create_connection
 from gevent.coros import Semaphore
 
-from gservice.config import Option
-from gservice.core import Service
+from ginkgo import Service
 
 from ws4py.client.geventclient import WebSocketClient
 
@@ -41,7 +40,7 @@ class TunnelClient(Service):
     
     def do_start(self):
         self.ws.connect()
-        gevent.spawn(self.listen)
+        self.spawn(self.listen)
         #gevent.spawn(self.visual_heartbeat)
     
     def visual_heartbeat(self):
@@ -70,7 +69,7 @@ class TunnelClient(Service):
     def local_open(self, conn_id):
         socket = create_connection(('0.0.0.0', self.local_port))
         self.connections[conn_id] = socket
-        gevent.spawn(self.local_recv, conn_id)
+        self.spawn(self.local_recv, conn_id)
     
     def local_close(self, conn_id):
         socket = self.connections.pop(conn_id)

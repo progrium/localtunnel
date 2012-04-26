@@ -7,8 +7,9 @@ import gevent.pywsgi
 from gevent.queue import Queue
 from gevent.pool import Group
 
-from gservice.config import Option
-from gservice.core import Service
+from ginkgo import Setting
+from ginkgo import Service
+from ginkgo.async.gevent import ServerWrapper
 
 from ws4py.server.geventserver import UpgradableWSGIHandler
 from ws4py.server.wsgi.middleware import WebSocketUpgradeMiddleware
@@ -30,12 +31,12 @@ class CodependentGroup(Group):
 class TunnelBroker(Service):
     """Top-level service that manages tunnels and runs the frontend"""
     
-    port = Option('port', default=80)
-    address = Option('address', default='0.0.0.0')
+    port = Setting('port', default=80)
+    address = Setting('address', default='0.0.0.0')
     
     def __init__(self):
         self.frontend = BrokerFrontend(self)
-        self.add_service(self.frontend)
+        self.add_service(ServerWrapper(self.frontend))
         
         self.tunnels = {}
     
@@ -63,7 +64,7 @@ class TunnelBroker(Service):
 class BrokerFrontend(gevent.pywsgi.WSGIServer):
     """Server that will manage a tunnel or proxy traffic through a tunnel"""
     
-    hostname = Option('hostname', default="localtunnel.com")
+    hostname = Setting('hostname', default="localtunnel.com")
     
     def __init__(self, broker):
         gevent.pywsgi.WSGIServer.__init__(self, (broker.address, broker.port))

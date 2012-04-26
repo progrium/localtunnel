@@ -3,6 +3,4 @@ import os
 port = int(os.environ.get("PORT", 5000))
 hostname = 'v2.localtunnel.com'
 
-def service():
-    from localtunnel.server import TunnelBroker
-    return TunnelBroker()
+service = 'localtunnel.server.TunnelBroker'
