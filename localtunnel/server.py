@@ -31,7 +31,7 @@ class CodependentGroup(Group):
 class TunnelBroker(Service):
     """Top-level service that manages tunnels and runs the frontend"""
     
-    port = Setting('port', default=80)
+    port = Setting('port', default=8000)
     address = Setting('address', default='0.0.0.0')
     
     def __init__(self):
@@ -64,7 +64,7 @@ class TunnelBroker(Service):
 class BrokerFrontend(gevent.pywsgi.WSGIServer):
     """Server that will manage a tunnel or proxy traffic through a tunnel"""
     
-    hostname = Setting('hostname', default="localtunnel.com")
+    hostname = Setting('hostname', default="vcap.me") # *.vcap.me -> 127.0.0.1
     
     def __init__(self, broker):
         gevent.pywsgi.WSGIServer.__init__(self, (broker.address, broker.port))
