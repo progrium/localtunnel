@@ -1,0 +1,6 @@
+git+git://github.com/progrium/ginkgo.git#egg=ginkgo
+git+git://github.com/progrium/WebSocket-for-Python.git#egg=ws4py-dev
+gevent==0.13.6
+greenlet==0.3.1
+nose==1.1.2
+wsgiref==0.1.2
