@@ -65,12 +65,12 @@ class TunnelClient(Service):
             elif msg.is_binary:
                 conn_id, data = decode_data_packet(msg.data)
                 self.local_send(conn_id, data)
-                
+
     def local_open(self, conn_id):
         socket = create_connection(('0.0.0.0', self.local_port))
         self.connections[conn_id] = socket
         self.spawn(self.local_recv, conn_id)
-    
+
     def local_close(self, conn_id):
         socket = self.connections.pop(conn_id)
         try:
@@ -78,10 +78,10 @@ class TunnelClient(Service):
             socket.close()
         except:
             pass
-    
+
     def local_send(self, conn_id, data):
         self.connections[conn_id].send(data)
-    
+
     def local_recv(self, conn_id):
         while True:
             data = self.connections[conn_id].recv(1024)
