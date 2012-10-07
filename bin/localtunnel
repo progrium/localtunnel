@@ -26,6 +26,8 @@ require 'rubygems'
 require 'optparse'
 require 'localtunnel'
 
+$stdout.sync = true
+
 key = nil
 options = OptionParser.new do |o|
   o.banner = 
