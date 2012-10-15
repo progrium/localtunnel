@@ -24,25 +24,25 @@ def port_available(port):
         return False
     except socket.error:
         return True
-    
-def baseN(num,b=32,numerals="23456789abcdefghijkmnpqrstuvwxyz"): 
+
+def baseN(num,b=32,numerals="23456789abcdefghijkmnpqrstuvwxyz"):
     return ((num == 0) and  "0" ) or (baseN(num // b, b).lstrip("0") + numerals[num % b])
 
 class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
     isLeaf = True
-    
+
     def __init__(self, user, host='127.0.0.1'):
         self.user = user
         self.tunnels = {}
         proxy.ReverseProxyResource.__init__(self, host, None, None)
-    
+
     def find_tunnel_name(self):
-        name = baseN(abs(hash(time.time())))[0:4]
+        name = baseN(abs(hash(time.time())))[0:5]
         if (name in self.tunnels and not port_available(self.tunnels[name])) or name == 'open':
             time.sleep(0.1)
             return self.find_tunnel_name()
         return name
-        
+
     def find_tunnel_port(self):
         port = PORT_RANGE[0]
         start_time = time.time()
@@ -52,12 +52,12 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             port += 1
             if port >= PORT_RANGE[1]: port = PORT_RANGE[0]
         return port
-    
+
     def garbage_collect(self):
         for name in self.tunnels:
             if port_available(self.tunnels[name]):
                 del self.tunnels[name]
-    
+
     def install_key(self, key):
         if not KEY_REGEX.match(key.strip()):
             return False
@@ -69,7 +69,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             fa.close()
         fr.close()
         return True
-    
+
     def register_tunnel(self, superhost, key=None):
         if key and not self.install_key(key): return simplejson.dumps(dict(error="Invalid key."))
         name = self.find_tunnel_name()
@@ -77,7 +77,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
         self.tunnels[name] = port
         return simplejson.dumps(
             dict(through_port=port, user=self.user, host='%s.%s' % (name, superhost), banner=BANNER))
-    
+
     def render(self, request):
         host = request.getHeader('host')
         name, superhost = host.split('.', 1)
@@ -86,7 +86,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
             return self.register_tunnel(superhost, request.args.get('key', [None])[0])
         else:
             if not name in self.tunnels: return "Not found"
-        
+
             request.content.seek(0, 0)
             clientFactory = self.proxyClientFactoryClass(
                 request.method, request.uri, request.clientproto,
@@ -100,7 +100,7 @@ class LocalTunnelReverseProxy(proxy.ReverseProxyResource):
 #    location = p.sub(host, request.responseHeaders['location'])
 #    request.responseHeaders['location'] = location
 
-        
+
 log.startLogging(sys.stdout)
 reactor.listenTCP(80, server.Site(LocalTunnelReverseProxy(SSH_USER)))
 reactor.run()
