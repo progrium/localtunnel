@@ -4,14 +4,15 @@ from setuptools import setup, find_packages
 
 setup(
     name='localtunnel',
-    version='0.4.0',
+    version='0.5.0',
     author='Jeff Lindsay',
-    author_email='jeff.lindsay@twilio.com',
+    author_email='progrium@gmail.com',
     description='',
     packages=find_packages(),
-    install_requires=['ginkgo', 'ws4py'],
+    install_requires=['gevent'],
     data_files=[],
     entry_points={
         'console_scripts': [
-            'lt = localtunnel.client:main',]},
+            'lt = localtunnel.client:run',
+            'localtunneld = localtunnel.server:run',]},
 )

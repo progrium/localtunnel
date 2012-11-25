@@ -1,3 +1,9 @@
-www:
+server:
   type: custom
-  buildscript: deploy/builder
+  buildscript: builder
+  ports:
+    frontend: tcp
+    backend: tcp
+  process: ~/env/bin/localtunneld $PORT_FRONTEND $PORT_BACKEND
+  systempackages:
+    - libevent-dev
