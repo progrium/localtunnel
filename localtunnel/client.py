@@ -29,7 +29,7 @@ def client_connector(backend, local_port, tunnel_data,
         header = recv_json(backend_client)
         if header and 'banner' in header:
             print "  {0}".format(header['banner'])
-            print "\n  Port {0} is now accessible from http://{1} ...\n".format(
+            print "  Port {0} is now accessible from http://{1} ...\n".format(
                     local_port, header['host'])
             ready.set()
         elif header and 'error' in header:

@@ -11,7 +11,10 @@ from localtunnel.tunnel import Tunnel
 from localtunnel.util import group, join_sockets, recv_json
 
 HOST_TEMPLATE = "{0}.v2.localtunnel.com"
-BANNER = "Thanks for trying localtunnel v2 beta!"
+BANNER = """Thanks for trying localtunnel v2 beta!
+  Source code: https://github.com/progrium/localtunnel
+  Donate: http://j.mp/donate-localtunnel
+"""
 
 def backend_handler(socket, address):
     header = recv_json(socket)
