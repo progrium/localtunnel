@@ -13,6 +13,6 @@ setup(
     data_files=[],
     entry_points={
         'console_scripts': [
-            'lt = localtunnel.client:run',
+            'localtunnel-beta = localtunnel.client:run',
             'localtunneld = localtunnel.server:run',]},
 )
