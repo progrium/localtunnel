@@ -1,6 +1,7 @@
 import json
 import getpass
 import socket
+import urllib2
 
 import gevent
 import gevent.pool
@@ -55,10 +56,10 @@ def client_name():
     return "{0}@{1}".format(getpass.getuser(), socket.gethostname())
 
 def discover_backend_port(hostname, frontend_port=80):
-    client = gevent.socket.create_connection((hostname, frontend_port))
-    client.sendall("Host: _backend.{0}".format(hostname))
-    port = client.recv(8)
-    if not port:
+    try:
+        data = urllib2.urlopen(urllib2.Request(
+            "http://{0}:{1}/".format(hostname,frontend_port),
+            headers={"Host": "_backend.{0}".format(hostname)}))
+        return int(data.read())
+    except urllib2.HTTPError:
         raise RuntimeError("Frontend failed to provide backend port")
-    client.close()
-    return int(port.strip())

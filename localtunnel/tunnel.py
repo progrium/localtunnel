@@ -1,5 +1,6 @@
 import json
 import time
+import logging
 
 import gevent.coros
 
@@ -7,6 +8,7 @@ class Tunnel(object):
     max_backend_size = 8
     domain_part = 3
     backend_port = None
+    cleanup_interval = 60
 
     _tunnels = {}
 
@@ -14,6 +16,7 @@ class Tunnel(object):
         self.name = name
         self.client = client
         self.created = time.time()
+        self.updated = time.time()
         self.domain = domain
         self.backend_pool = []
         self.pool_semaphore = gevent.coros.Semaphore(0)
@@ -24,6 +27,7 @@ class Tunnel(object):
         if pool_size < Tunnel.max_backend_size:
             self.backend_pool.append(socket)
             self.pool_semaphore.release()
+            self.updated = time.time()
         else:
             raise ValueError("backend:\"{0}\" pool is full".format(
                     self.name))
@@ -37,7 +41,7 @@ class Tunnel(object):
     @classmethod
     def create(cls, obj):
         obj.pop('new', None)
-        tunnel = Tunnel(**obj)
+        tunnel = cls(**obj)
         cls._tunnels[tunnel.name] = tunnel
         return tunnel
 
@@ -57,10 +61,29 @@ class Tunnel(object):
         if header['name'] in cls._tunnels:
             tunnel = cls._tunnels[header['name']]
             if tunnel.client != header['client']:
-                return
+                raise RuntimeError("Tunnel name '{0}' is being used".format(
+                        tunnel.name))
             if 'new' in header:
                 return cls.create(header)
             return tunnel
         if 'new' in header:
             return cls.create(header)
+
+    @classmethod
+    def schedule_cleanup(cls):
+        def _cleanup():
+            to_remove = []
+            for name, tunnel in cls._tunnels.iteritems():
+                if time.time() - tunnel.updated > cls.cleanup_interval:
+                    to_remove.append(name)
+            tunnel_count = len(cls._tunnels)
+            for name in to_remove:
+                for backend in cls._tunnels[name].backend_pool:
+                    backend.close()
+                cls._tunnels.pop(name, None)
+            if to_remove:
+                logging.debug("Cleaned up {0} of {1} tunnels".format(
+                    len(to_remove), tunnel_count))
+            cls.schedule_cleanup()
+        gevent.spawn_later(cls.cleanup_interval, _cleanup)
 

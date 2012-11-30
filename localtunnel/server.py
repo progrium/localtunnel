@@ -19,9 +19,16 @@ def backend_handler(socket, address):
         logging.debug("!backend: no header, closing")
         socket.close()
         return
-    tunnel = Tunnel.get_by_header(header)
+    try:
+        tunnel = Tunnel.get_by_header(header)
+    except RuntimeError, e:
+        socket.sendall("{0}\n".format(
+            json.dumps({"error": str(e)})))
+        socket.close()
+        return
     if not tunnel:
-        logging.debug("!backend: no tunnel, closing")
+        socket.sendall("{0}\n".format(
+            json.dumps({"error": "Tunnel expired"})))
         socket.close()
         return
     if tunnel.new is True:
@@ -62,9 +69,10 @@ def frontend_handler(socket, address):
         socket.close()
         return
     if hostname.startswith('_backend.'):
-        socket.send(
-            "{0}\n".format(os.environ.get(
-                'DOTCLOUD_SERVER_BACKEND_PORT', Tunnel.backend_port)))
+        port = os.environ.get('DOTCLOUD_SERVER_BACKEND_PORT', Tunnel.backend_port)
+        data = """HTTP/1.1 200 OK\r\nContent-Length: {0}\r\nConnection: close\r\n\r\n{1}
+               """.format(len(str(port)), port).strip()
+        socket.sendall(data)
         socket.close()
         return
     tunnel = Tunnel.get_by_hostname(hostname)
@@ -110,6 +118,7 @@ def run():
                 ('0.0.0.0', args.backend_port), backend_handler)
     
     try:
+        Tunnel.schedule_cleanup()
         gevent.joinall(group([
             gevent.spawn(frontend.serve_forever),
             gevent.spawn(backend.serve_forever),
