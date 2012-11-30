@@ -36,8 +36,11 @@ def client_connector(backend, local_port, tunnel_data,
             print "  ERROR: {0}".format(header['error'])
             gevent.hub.get_hub().parent.throw(SystemExit(1))
         else:
-            local_client = create_connection(('0.0.0.0', local_port))
-            join_sockets(backend_client, local_client)
+            try:
+                local_client = create_connection(('0.0.0.0', local_port))
+                join_sockets(backend_client, local_client)
+            except IOError:
+                backend_client.close()
 
 def run():
     parser = argparse.ArgumentParser(

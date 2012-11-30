@@ -4,7 +4,7 @@ from setuptools import setup, find_packages
 
 setup(
     name='localtunnel',
-    version='0.5.0',
+    version='0.5.1',
     author='Jeff Lindsay',
     author_email='progrium@gmail.com',
     description='',
