@@ -66,9 +66,10 @@ def run():
 
     host = args.host.split(':')
     if len(host) == 1:
-        backend_address = (host[0], discover_backend_port(host[0]))
+        backend_port = discover_backend_port(host[0])
     else:
-        backend_address = (host[0], discover_backend_port(host[0], int(host[1])))
+        backend_port = discover_backend_port(host[0], int(host[1]))
+    backend_address = (host[0], backend_port)
 
     try:
         spawn_args = [client_connector, backend_address, args.port, tunnel_data]
