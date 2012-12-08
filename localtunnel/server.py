@@ -5,10 +5,11 @@ import re
 import os
 from socket import MSG_PEEK
 
-import gevent.server
+import eventlet
+import eventlet.greenpool
 
 from localtunnel.tunnel import Tunnel
-from localtunnel.util import group, join_sockets, recv_json
+from localtunnel.util import join_sockets, recv_json, leave_socket_open
 
 HOST_TEMPLATE = "{0}.v2.localtunnel.com"
 BANNER = """Thanks for trying localtunnel v2 beta!
@@ -49,6 +50,7 @@ def backend_handler(socket, address):
             tunnel.add_backend(socket)
             logging.debug("added backend:\"{0}\" by client:\"{1}\"".format(
                     tunnel.name, tunnel.client))
+            leave_socket_open()
         except ValueError, e:
             logging.debug(str(e))
 
@@ -89,9 +91,10 @@ def frontend_handler(socket, address):
         socket.close()
         return
     conn.send("\n")
-    join_sockets(conn, socket)
+    pool = join_sockets(conn, socket)
     logging.debug("popped backend:\"{0}\" for frontend:\"{1}\"".format(
                 tunnel.name, hostname))
+    pool.waitall()
 
         
 def run():
@@ -115,16 +118,14 @@ def run():
         Tunnel.domain_part = args.domainpart
     Tunnel.backend_port = args.backend_port
 
-    frontend = gevent.server.StreamServer(
-                ('0.0.0.0', args.frontend_port), frontend_handler)
-    backend = gevent.server.StreamServer(
-                ('0.0.0.0', args.backend_port), backend_handler)
+    frontend_listener = eventlet.listen(('0.0.0.0', args.frontend_port))
+    backend_listener = eventlet.listen(('0.0.0.0', args.backend_port))
     
     try:
         Tunnel.schedule_cleanup()
-        gevent.joinall(group([
-            gevent.spawn(frontend.serve_forever),
-            gevent.spawn(backend.serve_forever),
-        ]))
+        pool = eventlet.greenpool.GreenPool(size=2)
+        pool.spawn_n(eventlet.serve, frontend_listener, frontend_handler)
+        pool.spawn_n(eventlet.serve, backend_listener, backend_handler)
+        pool.waitall()
     except KeyboardInterrupt:
         pass

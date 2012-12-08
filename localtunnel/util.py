@@ -3,18 +3,11 @@ import getpass
 import socket
 import urllib2
 
-import gevent
-import gevent.pool
-import gevent.socket
+import eventlet
+import eventlet.greenpool
 
-def group(greenlets):
-    class _codependents(gevent.pool.Group):
-        def discard(self, greenlet):
-            super(_codependents, self).discard(greenlet)
-            if not hasattr(self, '_killing'):
-                self._killing = True
-                gevent.spawn(self.kill)
-    return _codependents(greenlets)
+def leave_socket_open():
+    eventlet.getcurrent()._exit_funcs = [] 
 
 def join_sockets(a, b):
     def _pipe(from_, to):
@@ -34,10 +27,10 @@ def join_sockets(a, b):
             to.close()
         except: 
             pass
-    return group([
-        gevent.spawn(_pipe, a, b),
-        gevent.spawn(_pipe, b, a),
-    ])
+    pool = eventlet.greenpool.GreenPool(size=2)
+    pool.spawn_n(_pipe, a, b)
+    pool.spawn_n(_pipe, b, a)
+    return pool
 
 def recv_json(socket, max_size=256):
     buffer = bytearray()
@@ -45,6 +38,7 @@ def recv_json(socket, max_size=256):
     while byte != "\n" and len(buffer) < max_size:
         byte = socket.recv(1)
         if not byte:
+            print "no byte"
             return
         buffer.extend(byte)
     try:

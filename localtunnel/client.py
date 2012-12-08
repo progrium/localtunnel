@@ -4,40 +4,44 @@ import json
 import uuid
 import sys
 
-import gevent
-import gevent.event
-from gevent.socket import create_connection
+import eventlet
+import eventlet.event
+import eventlet.greenpool
 
 from localtunnel.util import join_sockets
-from localtunnel.util import group
 from localtunnel.util import recv_json
 from localtunnel.util import client_name
 from localtunnel.util import discover_backend_port
 
-def client_connector(backend, local_port, tunnel_data,
-            ready=gevent.event.Event()):
+_ready = eventlet.event.Event()
+def clear():
+    _ready = eventlet.event.Event()
+
+
+def client_connector(backend, local_port, tunnel_data):
     while True:
         init = tunnel_data.pop('init', None)
         header = copy.copy(tunnel_data)
         if init:
             header['new'] = True
-            ready.clear()
-        elif not ready.isSet():
-            ready.wait()
-        backend_client = create_connection(backend)
+            clear()
+        elif not _ready.ready():
+            _ready.wait()
+        backend_client = eventlet.connect(backend)
         backend_client.sendall("{0}\n".format(json.dumps(header)))
         header = recv_json(backend_client)
         if header and 'banner' in header:
             print "  {0}".format(header['banner'])
             print "  Port {0} is now accessible from http://{1} ...\n".format(
                     local_port, header['host'])
-            ready.set()
+            _ready.send()
         elif header and 'error' in header:
             print "  ERROR: {0}".format(header['error'])
-            gevent.hub.get_hub().parent.throw(SystemExit(1))
+            sys.exit(1)
+            #gevent.hub.get_hub().parent.throw(SystemExit(1))
         else:
             try:
-                local_client = create_connection(('0.0.0.0', local_port))
+                local_client = eventlet.connect(('0.0.0.0', local_port))
                 join_sockets(backend_client, local_client)
             except IOError:
                 backend_client.close()
@@ -73,8 +77,9 @@ def run():
 
     try:
         spawn_args = [client_connector, backend_address, args.port, tunnel_data]
-        gevent.joinall(group([
-            gevent.spawn(*spawn_args) for n in range(args.concurrency)
-        ]))
+        pool = eventlet.greenpool.GreenPool(args.concurrency)
+        for _ in range(args.concurrency):
+            pool.spawn_n(*spawn_args)
+        pool.waitall()
     except KeyboardInterrupt:
         pass

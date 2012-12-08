@@ -2,7 +2,8 @@ import json
 import time
 import logging
 
-import gevent.coros
+import eventlet
+import eventlet.semaphore
 
 class Tunnel(object):
     max_backend_size = 8
@@ -19,7 +20,7 @@ class Tunnel(object):
         self.updated = time.time()
         self.domain = domain
         self.backend_pool = []
-        self.pool_semaphore = gevent.coros.Semaphore(0)
+        self.pool_semaphore = eventlet.semaphore.Semaphore(0)
         self.new = True
 
     def add_backend(self, socket):
@@ -33,7 +34,8 @@ class Tunnel(object):
                     self.name))
 
     def pop_backend(self, timeout=None):
-        self.pool_semaphore.acquire(timeout=timeout)
+        # TODO: timeout
+        self.pool_semaphore.acquire()
         if not len(self.backend_pool):
             return
         return self.backend_pool.pop()
@@ -85,5 +87,5 @@ class Tunnel(object):
                 logging.debug("Cleaned up {0} of {1} tunnels".format(
                     len(to_remove), tunnel_count))
             cls.schedule_cleanup()
-        gevent.spawn_later(cls.cleanup_interval, _cleanup)
+        eventlet.spawn_after(cls.cleanup_interval, _cleanup)
 
