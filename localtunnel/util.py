@@ -38,7 +38,6 @@ def recv_json(socket, max_size=256):
     while byte != "\n" and len(buffer) < max_size:
         byte = socket.recv(1)
         if not byte:
-            print "no byte"
             return
         buffer.extend(byte)
     try:
