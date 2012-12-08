@@ -4,12 +4,12 @@ from setuptools import setup, find_packages
 
 setup(
     name='localtunnel',
-    version='0.5.1',
+    version='0.5.2',
     author='Jeff Lindsay',
     author_email='progrium@gmail.com',
     description='',
     packages=find_packages(),
-    install_requires=['gevent'],
+    install_requires=['eventlet'],
     data_files=[],
     entry_points={
         'console_scripts': [

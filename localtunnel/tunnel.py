@@ -3,6 +3,7 @@ import time
 import logging
 
 import eventlet
+import eventlet.timeout
 import eventlet.semaphore
 
 class Tunnel(object):
@@ -34,8 +35,8 @@ class Tunnel(object):
                     self.name))
 
     def pop_backend(self, timeout=None):
-        # TODO: timeout
-        self.pool_semaphore.acquire()
+        with eventlet.timeout.Timeout(timeout, False):
+            self.pool_semaphore.acquire()
         if not len(self.backend_pool):
             return
         return self.backend_pool.pop()
