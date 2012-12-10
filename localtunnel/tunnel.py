@@ -7,46 +7,57 @@ import eventlet.timeout
 import eventlet.semaphore
 
 class Tunnel(object):
-    max_backend_size = 8
+    max_pool_size = 3
     domain_part = 3
     backend_port = None
-    cleanup_interval = 60
+    active_timeout = 5 * 60
 
     _tunnels = {}
 
-    def __init__(self, name, client, domain=None):
+    def __init__(self, name, client, protect=None, domain=None):
         self.name = name
         self.client = client
+        if protect:
+            user, passwd = protect.split(':')
+            self.protect_user = user
+            self.protect_passwd = passwd
+            self.protect = True
+        else:
+            self.protect = False
+        self.domain = domain
         self.created = time.time()
         self.updated = time.time()
-        self.domain = domain
-        self.backend_pool = []
+        self.idle = False
+        self.proxy_pool = []
         self.pool_semaphore = eventlet.semaphore.Semaphore(0)
-        self.new = True
 
-    def add_backend(self, socket):
-        pool_size = len(self.backend_pool)
-        if pool_size < Tunnel.max_backend_size:
-            self.backend_pool.append(socket)
+    def add_proxy_backend(self, socket):
+        pool_size = len(self.proxy_pool)
+        if pool_size < Tunnel.max_pool_size:
+            self.proxy_pool.append(socket)
             self.pool_semaphore.release()
             self.updated = time.time()
+            self.idle = False
         else:
             raise ValueError("backend:\"{0}\" pool is full".format(
                     self.name))
 
-    def pop_backend(self, timeout=None):
+    def pop_proxy_backend(self, timeout=None):
         with eventlet.timeout.Timeout(timeout, False):
             self.pool_semaphore.acquire()
-        if not len(self.backend_pool):
+        if not len(self.proxy_pool):
             return
-        return self.backend_pool.pop()
+        return self.proxy_pool.pop()
 
     @classmethod
     def create(cls, obj):
-        obj.pop('new', None)
         tunnel = cls(**obj)
         cls._tunnels[tunnel.name] = tunnel
         return tunnel
+
+    @classmethod
+    def destroy(cls, tunnel):
+        cls._tunnels.pop(tunnel.name, None)
 
     @classmethod
     def get_by_hostname(cls, hostname):
@@ -60,33 +71,37 @@ class Tunnel(object):
             return tunnel
 
     @classmethod
-    def get_by_header(cls, header):
-        if header['name'] in cls._tunnels:
-            tunnel = cls._tunnels[header['name']]
-            if tunnel.client != header['client']:
+    def get_by_control_request(cls, request):
+        if request['name'] in cls._tunnels:
+            tunnel = cls._tunnels[request['name']]
+            if tunnel.client != request['client']:
                 raise RuntimeError("Tunnel name '{0}' is being used".format(
                         tunnel.name))
-            if 'new' in header:
-                return cls.create(header)
-            return tunnel
-        if 'new' in header:
-            return cls.create(header)
+        return cls.create(request)
 
     @classmethod
-    def schedule_cleanup(cls):
-        def _cleanup():
-            to_remove = []
-            for name, tunnel in cls._tunnels.iteritems():
-                if time.time() - tunnel.updated > cls.cleanup_interval:
-                    to_remove.append(name)
+    def get_by_proxy_request(cls, request):
+        if request['name'] in cls._tunnels:
+            tunnel = cls._tunnels[request['name']]
+            if tunnel.client != request['client']:
+                raise RuntimeError("Tunnel name '{0}' is being used".format(
+                        tunnel.name))
+            return tunnel
+
+    @classmethod
+    def schedule_idle_scan(cls):
+        def _scan_idle():
             tunnel_count = len(cls._tunnels)
-            for name in to_remove:
-                for backend in cls._tunnels[name].backend_pool:
-                    backend.close()
-                cls._tunnels.pop(name, None)
-            if to_remove:
-                logging.debug("Cleaned up {0} of {1} tunnels".format(
-                    len(to_remove), tunnel_count))
-            cls.schedule_cleanup()
-        eventlet.spawn_after(cls.cleanup_interval, _cleanup)
+            idle_count = 0
+            for name, tunnel in cls._tunnels.iteritems():
+                if time.time() - tunnel.updated > cls.active_timeout:
+                    tunnel.idle = True
+                    idle_count += 1
+            # TODO: report idle
+            if idle_count:
+                logging.debug("scan: {0} of {1} tunnels are idle".format(
+                    idle_count, tunnel_count))
+
+            cls.schedule_idle_scan()
+        eventlet.spawn_after(cls.active_timeout, _scan_idle)
 

@@ -1,6 +1,4 @@
 import argparse
-import copy
-import json
 import uuid
 import sys
 
@@ -8,44 +6,30 @@ import eventlet
 import eventlet.event
 import eventlet.greenpool
 
-from localtunnel.util import join_sockets
-from localtunnel.util import recv_json
-from localtunnel.util import client_name
-from localtunnel.util import discover_backend_port
+from localtunnel import util
+from localtunnel import protocol
 
-_ready = eventlet.event.Event()
-def clear():
-    _ready = eventlet.event.Event()
-
-
-def client_connector(backend, local_port, tunnel_data):
-    while True:
-        init = tunnel_data.pop('init', None)
-        header = copy.copy(tunnel_data)
-        if init:
-            header['new'] = True
-            clear()
-        elif not _ready.ready():
-            _ready.wait()
-        backend_client = eventlet.connect(backend)
-        backend_client.sendall("{0}\n".format(json.dumps(header)))
-        header = recv_json(backend_client)
-        if header and 'banner' in header:
-            print "  {0}".format(header['banner'])
-            print "  Port {0} is now accessible from http://{1} ...\n".format(
-                    local_port, header['host'])
-            _ready.send()
-        elif header and 'error' in header:
-            print "  ERROR: {0}".format(header['error'])
-            sys.exit(1)
-            #gevent.hub.get_hub().parent.throw(SystemExit(1))
-        else:
-            try:
-                local_client = eventlet.connect(('0.0.0.0', local_port))
-                join_sockets(backend_client, local_client)
-            except IOError:
-                backend_client.close()
-
+def open_proxy_backend(backend, port, name, client):
+    proxy = eventlet.connect(backend)
+    proxy.sendall(protocol.VERSION)
+    protocol.send_message(proxy, 
+        protocol.proxy_request(
+            name=name, 
+            client=client,
+    ))
+    reply = protocol.recv_message(proxy)
+    if reply and 'proxy' in reply:
+        try:
+            local = eventlet.connect(('0.0.0.0', port))
+            util.join_sockets(proxy, local)
+        except IOError:
+            proxy.close()
+    elif reply and 'error' in reply:
+        print "  ERROR: {0}".format(reply['error'])
+        return
+    else:
+        pass
+ 
 def run():
     parser = argparse.ArgumentParser(
                 description='Open a public HTTP tunnel to a local server')
@@ -62,24 +46,52 @@ def run():
                 help='localtunnel server address (default: v2.localtunnel.com)')
     args = parser.parse_args()
 
-    tunnel_data = {
-            'name': args.name, 
-            'client': client_name(),
-            'init': True,
-    }
-
     host = args.host.split(':')
     if len(host) == 1:
-        backend_port = discover_backend_port(host[0])
+        backend_port = util.discover_backend_port(host[0])
     else:
-        backend_port = discover_backend_port(host[0], int(host[1]))
-    backend_address = (host[0], backend_port)
+        backend_port = util.discover_backend_port(host[0], int(host[1]))
+    backend = (host[0], backend_port)
+
+    name = args.name
+    client = util.client_name()
+    port = args.port
 
     try:
-        spawn_args = [client_connector, backend_address, args.port, tunnel_data]
-        pool = eventlet.greenpool.GreenPool(args.concurrency)
-        for _ in range(args.concurrency):
-            pool.spawn_n(*spawn_args)
-        pool.waitall()
+        control = eventlet.connect(backend)
+        control.sendall(protocol.VERSION)
+        protocol.send_message(control, 
+            protocol.control_request(
+                name=name, 
+                client=client,
+        ))
+        reply = protocol.recv_message(control)
+        if reply and 'control' in reply:
+            reply = reply['control']
+
+            def maintain_proxy_backend_pool():
+                pool = eventlet.greenpool.GreenPool(reply['concurrency'])
+                while True:
+                    pool.spawn_n(open_proxy_backend, 
+                            backend, port, name, client)
+            proxying = eventlet.spawn(maintain_proxy_backend_pool)
+
+            print "  {0}".format(reply['banner'])
+            print "  Port {0} is now accessible from http://{1} ...\n".format(
+                    port, reply['host'])
+
+            try:
+                while True:
+                    message = protocol.recv_message(control)
+                    assert message == protocol.control_ping()
+                    protocol.send_message(control, protocol.control_pong())
+            except (IOError, AssertionError):
+                proxying.kill()
+            
+        elif reply and 'error' in reply:
+            print "  ERROR: {0}".format(reply['message'])
+        else:
+            print "  ERROR: Unexpected server reply."
+            print "         Make sure you have the latest version of the client."
     except KeyboardInterrupt:
         pass

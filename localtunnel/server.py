@@ -7,52 +7,76 @@ from socket import MSG_PEEK
 
 import eventlet
 import eventlet.greenpool
+from eventlet.timeout import Timeout
 
 from localtunnel.tunnel import Tunnel
-from localtunnel.util import join_sockets, recv_json, leave_socket_open
+from localtunnel import util
+from localtunnel import protocol
 
 HOST_TEMPLATE = "{0}.v2.localtunnel.com"
 BANNER = """Thanks for trying localtunnel v2 beta!
   Source code: https://github.com/progrium/localtunnel
   Donate: http://j.mp/donate-localtunnel
 """
+HEARTBEAT_INTERVAL = 5
 
 def backend_handler(socket, address):
-    header = recv_json(socket)
-    if not header:
-        logging.debug("!backend: no header, closing")
+    try:
+        protocol.assert_protocol(socket)
+        message = protocol.recv_message(socket)
+        if message and 'control' in message:
+            handle_control(socket, message['control'])
+        elif message and 'proxy' in message:
+            handle_proxy(socket, message['proxy'])
+        else:
+            logging.debug("!backend: no request message, closing")
+    except AssertionError:
+        logging.debug("!backend: invalid protocol, closing")
+    
+def handle_control(socket, request):
+    try:
+        tunnel = Tunnel.get_by_control_request(request)
+    except RuntimeError, e:
+        protocol.send_message(socket, error_reply('notavailable'))
         socket.close()
         return
+    protocol.send_message(socket, protocol.control_reply(
+        host=HOST_TEMPLATE.format(tunnel.name),
+        banner=BANNER,
+        concurrency=Tunnel.max_pool_size,
+    ))
+    logging.info("created tunnel:\"{0}\" by client:\"{1}\"".format(
+            tunnel.name, tunnel.client))
+
     try:
-        tunnel = Tunnel.get_by_header(header)
+        while True:
+            eventlet.sleep(HEARTBEAT_INTERVAL)
+            protocol.send_message(socket, protocol.control_ping())
+            with Timeout(HEARTBEAT_INTERVAL):
+                message = protocol.recv_message(socket)
+                assert message == protocol.control_pong()
+    except (IOError, AssertionError, Timeout):
+        logging.debug("expiring tunnel:\"{0}\"".format(tunnel.name))
+        Tunnel.destroy(tunnel)
+
+def handle_proxy(socket, request):
+    try:
+        tunnel = Tunnel.get_by_proxy_request(request)
     except RuntimeError, e:
-        socket.sendall("{0}\n".format(
-            json.dumps({"error": str(e)})))
+        protocol.send_message(socket, protocol.error_reply('notavailable'))
         socket.close()
         return
     if not tunnel:
-        socket.sendall("{0}\n".format(
-            json.dumps({"error": "Tunnel expired"})))
+        protocol.send_message(socket, protocol.error_reply('expired'))
         socket.close()
         return
-    if tunnel.new is True:
-        tunnel.new = False
-        header = {
-            "host": HOST_TEMPLATE.format(tunnel.name), 
-            "banner": BANNER
-        }
-        socket.sendall("{0}\n".format(json.dumps(header)))
-        socket.close()
-        logging.info("created tunnel:\"{0}\" by client:\"{1}\"".format(
+    try:
+        tunnel.add_proxy_backend(socket)
+        logging.debug("added backend:\"{0}\" by client:\"{1}\"".format(
             tunnel.name, tunnel.client))
-    else:
-        try:
-            tunnel.add_backend(socket)
-            logging.debug("added backend:\"{0}\" by client:\"{1}\"".format(
-                    tunnel.name, tunnel.client))
-            leave_socket_open()
-        except ValueError, e:
-            logging.debug(str(e))
+        util.leave_socket_open()
+    except ValueError, e:
+        logging.debug(str(e))
 
 def frontend_handler(socket, address):
     hostname = ''
@@ -61,7 +85,8 @@ def frontend_handler(socket, address):
     for n in [128, 256, 512]:
         bytes = socket.recv(n, MSG_PEEK)
         if not bytes:
-            break
+            socket.close()
+            return
         for line in bytes.split('\r\n'):
             match = hostheader.match(line)
             if match:
@@ -82,22 +107,25 @@ def frontend_handler(socket, address):
         return
     tunnel = Tunnel.get_by_hostname(hostname)
     if not tunnel:
-        logging.debug("!frontend: no tunnel, closing")
+        logging.debug("!frontend: no tunnel, closing ({0})".format(
+            hostname))
         socket.close()
         return
-    conn = tunnel.pop_backend(timeout=2)
+    conn = tunnel.pop_proxy_backend(timeout=2)
     if not conn:
         logging.debug("!frontend: no backend, closing")
         socket.close()
         return
-    conn.send("\n")
-    pool = join_sockets(conn, socket)
+    protocol.send_message(conn, protocol.proxy_reply())
+    pool = util.join_sockets(conn, socket)
     logging.debug("popped backend:\"{0}\" for frontend:\"{1}\"".format(
                 tunnel.name, hostname))
     pool.waitall()
 
         
 def run():
+    #eventlet.debug.hub_multiple_reader_prevention(False)
+
     logging.basicConfig(
         format="%(asctime)s %(levelname) 7s %(module)s: %(message)s",
         level=logging.DEBUG)
@@ -122,7 +150,7 @@ def run():
     backend_listener = eventlet.listen(('0.0.0.0', args.backend_port))
     
     try:
-        Tunnel.schedule_cleanup()
+        Tunnel.schedule_idle_scan()
         pool = eventlet.greenpool.GreenPool(size=2)
         pool.spawn_n(eventlet.serve, frontend_listener, frontend_handler)
         pool.spawn_n(eventlet.serve, backend_listener, backend_handler)

@@ -2,6 +2,7 @@ import json
 import getpass
 import socket
 import urllib2
+import platform
 
 import eventlet
 import eventlet.greenpool
@@ -32,21 +33,11 @@ def join_sockets(a, b):
     pool.spawn_n(_pipe, b, a)
     return pool
 
-def recv_json(socket, max_size=256):
-    buffer = bytearray()
-    byte = None
-    while byte != "\n" and len(buffer) < max_size:
-        byte = socket.recv(1)
-        if not byte:
-            return
-        buffer.extend(byte)
-    try:
-        return json.loads(str(buffer[0:-1]))
-    except ValueError:
-        return
-
 def client_name():
-    return "{0}@{1}".format(getpass.getuser(), socket.gethostname())
+    return "{0}@{1};{2}".format(
+        getpass.getuser(), 
+        socket.gethostname(),
+        platform.system())
 
 def discover_backend_port(hostname, frontend_port=80):
     try:
