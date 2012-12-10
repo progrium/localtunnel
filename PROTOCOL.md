@@ -4,7 +4,7 @@ The Localtunnel Protocol (LTP) defines a lightweight protocol for a
 client and server to establish a pool of connections used to proxy
 connections from the server to the client. 
 
-Editor: Jeff Lindsay <progrium@gmail.com>
+Editor: Jeff Lindsay <progrium@gmail.com><br />
 Contributors: Jeff Lindsay <progrium@gmail.com>
 
 ## License
