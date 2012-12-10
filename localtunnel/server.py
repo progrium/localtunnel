@@ -58,7 +58,7 @@ def handle_control(socket, request):
                 assert message == protocol.control_pong()
     except (IOError, AssertionError, Timeout):
         logging.debug("expiring tunnel:\"{0}\"".format(tunnel.name))
-        Tunnel.destroy(tunnel)
+        tunnel.destroy()
 
 def handle_proxy(socket, request):
     try:

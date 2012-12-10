@@ -50,20 +50,24 @@ class Tunnel(object):
             return
         return self.proxy_pool.pop()
 
+    def destroy(self):
+        cls = self.__class__
+        if cls.stats:
+            duration = time.time() - self.created
+            cls.stats.value('tunnel_duration', duration)
+            platform = self.client.split(';', 1)[-1].lower()
+            cls.stats.count('usage:{0}'.format(platform), 1)
+        for backend in self.proxy_pool:
+            backend.close()
+        if self == cls._tunnels[self.name]:
+            cls._tunnels.pop(self.name, None)
+
+
     @classmethod
     def create(cls, obj):
         tunnel = cls(**obj)
         cls._tunnels[tunnel.name] = tunnel
         return tunnel
-
-    @classmethod
-    def destroy(cls, tunnel):
-        if cls.stats:
-            duration = time.time() - tunnel.created
-            cls.stats.value('tunnel_duration', duration)
-            platform = tunnel.client.split(';', 1)[-1].lower()
-            cls.stats.count('usage:{0}'.format(platform), 1)
-        cls._tunnels.pop(tunnel.name, None)
 
     @classmethod
     def get_by_hostname(cls, hostname):
@@ -84,7 +88,7 @@ class Tunnel(object):
                 raise RuntimeError("Tunnel name '{0}' is being used".format(
                         tunnel.name))
             else:
-                cls.destroy(tunnel)
+                tunnel.destroy()
         return cls.create(request)
 
     @classmethod
