@@ -11,6 +11,7 @@ class Tunnel(object):
     domain_part = 3
     backend_port = None
     active_timeout = 5 * 60
+    stats = None
 
     _tunnels = {}
 
@@ -57,6 +58,11 @@ class Tunnel(object):
 
     @classmethod
     def destroy(cls, tunnel):
+        if cls.stats:
+            duration = time.time() - tunnel.created
+            cls.stats.value('tunnel_duration', duration)
+            platform = tunnel.client.split(';', 1)[-1].lower()
+            cls.stats.count('usage:{0}'.format(platform), 1)
         cls._tunnels.pop(tunnel.name, None)
 
     @classmethod
@@ -77,6 +83,8 @@ class Tunnel(object):
             if tunnel.client != request['client']:
                 raise RuntimeError("Tunnel name '{0}' is being used".format(
                         tunnel.name))
+            else:
+                cls.destroy(tunnel)
         return cls.create(request)
 
     @classmethod
@@ -97,7 +105,9 @@ class Tunnel(object):
                 if time.time() - tunnel.updated > cls.active_timeout:
                     tunnel.idle = True
                     idle_count += 1
-            # TODO: report idle
+            if cls.stats:
+                cls.stats.value('total_tunnels', tunnel_count)
+                cls.stats.value('idle_tunnels', idle_count)
             if idle_count:
                 logging.debug("scan: {0} of {1} tunnels are idle".format(
                     idle_count, tunnel_count))

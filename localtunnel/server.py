@@ -126,6 +126,7 @@ def frontend_handler(socket, address):
         
 def run():
     eventlet.debug.hub_prevent_multiple_readers(False)
+    eventlet.monkey_patch(socket=True)
 
     logging.basicConfig(
         format="%(asctime)s %(levelname) 7s %(module)s: %(message)s",
@@ -143,9 +144,15 @@ def run():
     logging.info("starting frontend on {0}...".format(args.frontend_port))
     logging.info("starting backend on {0}...".format(args.backend_port))
     
+    Tunnel.backend_port = args.backend_port
+    
     if args.domainpart:
         Tunnel.domain_part = args.domainpart
-    Tunnel.backend_port = args.backend_port
+    
+    stats_key = os.environ.get('STATHAT_EZKEY', None)
+    if stats_key:
+        Tunnel.stats = util.StatHat(stats_key, 'localtunnel.')
+        logging.info("starting stats session with {0}".format(stats_key))
 
     frontend_listener = eventlet.listen(('0.0.0.0', args.frontend_port))
     backend_listener = eventlet.listen(('0.0.0.0', args.backend_port))
