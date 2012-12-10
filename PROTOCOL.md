@@ -83,7 +83,9 @@ Backend for every connection joined, maintaining a consistent Proxy
 Connection pool.
 
 This protocol addresses the interactions necessary on the Control
-Connection and at the beginning of the Proxy Connection.
+Connection and at the beginning of the Proxy Connection. This makes up
+all the communication between the Localtunnel Client and the Localtunnel
+Backend.
 
 ## Two Connection Types
 
