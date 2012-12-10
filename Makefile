@@ -5,3 +5,6 @@ release:
 
 deploy:
 	dotcloud push -a localtunnel .
+
+stage:
+	dotcloud push -a localtunnelstage .

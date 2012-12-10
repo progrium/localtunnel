@@ -6,6 +6,7 @@ import os
 from socket import MSG_PEEK
 
 import eventlet
+import eventlet.debug
 import eventlet.greenpool
 from eventlet.timeout import Timeout
 
@@ -124,7 +125,7 @@ def frontend_handler(socket, address):
 
         
 def run():
-    #eventlet.debug.hub_multiple_reader_prevention(False)
+    eventlet.debug.hub_prevent_multiple_readers(False)
 
     logging.basicConfig(
         format="%(asctime)s %(levelname) 7s %(module)s: %(message)s",

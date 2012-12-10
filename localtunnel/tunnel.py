@@ -65,7 +65,7 @@ class Tunnel(object):
         tunnel = cls._tunnels.get(name)
         if not tunnel:
             for n, tunnel in cls._tunnels.iteritems():
-                if hostname.endswith(tunnel.domain):
+                if tunnel.domain and hostname.endswith(tunnel.domain):
                     return tunnel
         else:
             return tunnel
