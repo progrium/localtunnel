@@ -71,7 +71,10 @@ class Tunnel(object):
 
     @classmethod
     def get_by_hostname(cls, hostname):
-        name = hostname.split('.')[-1 * Tunnel.domain_part]
+        try:
+            name = hostname.split('.')[-1 * Tunnel.domain_part]
+        except IndexError:
+            return
         tunnel = cls._tunnels.get(name)
         if not tunnel:
             for n, tunnel in cls._tunnels.iteritems():
