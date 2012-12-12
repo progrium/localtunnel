@@ -15,9 +15,13 @@ server.
 
 Installing
 ----------
-Localtunnel currently required Python 2.6 or greater. Install with pip::
+Localtunnel currently requires Python 2.6 or greater. Install with pip::
 
     $ pip install localtunnel
+    
+Since there is one dependency with a C extension, you will need Python
+headers and basic build tools. If you're on OS X this just means you need
+to have Xcode installed.
 
 License
 -------
