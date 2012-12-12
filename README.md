@@ -23,6 +23,10 @@ Since there is one dependency with a C extension, you will need Python
 headers and basic build tools. If you're on OS X this just means you need
 to have Xcode installed.
 
+Community
+---------
+ * [Localtunnel Google Group](https://groups.google.com/forum/#!forum/localtunnel)
+
 License
 -------
 MIT
