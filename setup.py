@@ -2,9 +2,11 @@
 import os
 from setuptools import setup, find_packages
 
+from localtunnel import VERSION
+
 setup(
     name='localtunnel',
-    version='0.5.5',
+    version=VERSION,
     author='Jeff Lindsay',
     author_email='progrium@gmail.com',
     description='',

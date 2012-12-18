@@ -13,6 +13,7 @@ from eventlet.timeout import Timeout
 from localtunnel.tunnel import Tunnel
 from localtunnel import util
 from localtunnel import protocol
+from localtunnel import VERSION
 
 HOST_TEMPLATE = "{0}.v2.localtunnel.com"
 BANNER = """Thanks for trying localtunnel v2 beta!
@@ -97,6 +98,12 @@ def frontend_handler(socket, address):
     hostname = hostname.split(':')[0]
     if not hostname:
         logging.debug("!frontend: no hostname, closing")
+        socket.close()
+        return
+    if hostname.startswith('_version.'):
+        data = """HTTP/1.1 200 OK\r\nContent-Length: {0}\r\nConnection: close\r\n\r\n{1}
+               """.format(len(VERSION), VERSION).strip()
+        socket.sendall(data)
         socket.close()
         return
     if hostname.startswith('_backend.'):

@@ -8,6 +8,7 @@ import eventlet.greenpool
 
 from localtunnel import util
 from localtunnel import protocol
+from localtunnel import VERSION
 
 def open_proxy_backend(backend, port, name, client):
     proxy = eventlet.connect(backend)
@@ -33,19 +34,32 @@ def open_proxy_backend(backend, port, name, client):
 def run():
     parser = argparse.ArgumentParser(
                 description='Open a public HTTP tunnel to a local server')
-    parser.add_argument('port', metavar='port', type=int,
-                help='local port of server to tunnel to')
+    parser.add_argument('-s', dest='host', metavar='address',
+                default='v2.localtunnel.com',
+                help='localtunnel server address (default: v2.localtunnel.com)')
+    parser.add_argument('--version', action='store_true',
+                help='show version information for client and server')
+    
+    if '--version' in sys.argv:
+        args = parser.parse_args()
+        try:
+            server_version = util.lookup_server_version(args.host)
+        except:
+            server_version = '??'
+        print "client: {}".format(VERSION)
+        print "server: {} ({})".format(server_version, args.host)
+        sys.exit(0)
+    
     parser.add_argument('-n', dest='name', metavar='name',
                 default=str(uuid.uuid4()).split('-')[-1], 
                 help='name of the tunnel (default: randomly generate)')
     parser.add_argument('-c', dest='concurrency', type=int,
                 metavar='concurrency', default=3,
                 help='number of concurrent backend connections')
-    parser.add_argument('-s', dest='host', metavar='address',
-                default='v2.localtunnel.com',
-                help='localtunnel server address (default: v2.localtunnel.com)')
+    parser.add_argument('port', metavar='port', type=int,
+                help='local port of server to tunnel to')
     args = parser.parse_args()
-
+        
     host = args.host.split(':')
     if len(host) == 1:
         backend_port = util.discover_backend_port(host[0])

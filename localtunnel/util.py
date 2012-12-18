@@ -50,6 +50,15 @@ def discover_backend_port(hostname, frontend_port=80):
     except urllib2.HTTPError:
         raise RuntimeError("Frontend failed to provide backend port")
 
+def lookup_server_version(hostname):
+    try:
+        data = urllib2.urlopen(urllib2.Request(
+            "http://{0}/".format(hostname),
+            headers={"Host": "_version.{0}".format(hostname)}))
+        return data.read()
+    except urllib2.HTTPError:
+        raise RuntimeError("Server failed to provide version")
+
 
 class StatHat(object):
     """The StatHat API wrapper."""
