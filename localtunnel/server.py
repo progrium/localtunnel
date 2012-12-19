@@ -105,6 +105,7 @@ def frontend_handler(socket, address):
                """.format(len(VERSION), VERSION).strip()
         socket.sendall(data)
         socket.close()
+        logging.debug("version request")
         return
     if hostname.startswith('_backend.'):
         port = os.environ.get('DOTCLOUD_SERVER_BACKEND_PORT', Tunnel.backend_port)

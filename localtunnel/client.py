@@ -42,11 +42,11 @@ def run():
     
     if '--version' in sys.argv:
         args = parser.parse_args()
+        print "client: {}".format(VERSION)
         try:
             server_version = util.lookup_server_version(args.host)
         except:
             server_version = '??'
-        print "client: {}".format(VERSION)
         print "server: {} ({})".format(server_version, args.host)
         sys.exit(0)
     
