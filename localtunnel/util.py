@@ -10,9 +10,14 @@ import eventlet
 import eventlet.greenpool
 
 def leave_socket_open():
+    """ 
+    removes the linked greenlet to close socket 
+    after server handler function
+    """
     eventlet.getcurrent()._exit_funcs = [] 
 
 def join_sockets(a, b):
+    """ socket joining implementation """
     def _pipe(from_, to):
         while True:
             try:
@@ -36,6 +41,7 @@ def join_sockets(a, b):
     return pool
 
 def client_name():
+    """ semi-unique client identifier string """
     return "{0}@{1};{2}".format(
         getpass.getuser(), 
         socket.gethostname(),
@@ -58,6 +64,17 @@ def lookup_server_version(hostname):
         return data.read()
     except urllib2.HTTPError:
         raise RuntimeError("Server failed to provide version")
+
+def print_server_metrics(hostname):
+    try:
+        data = urllib2.urlopen(urllib2.Request(
+            "http://{0}/".format(hostname),
+            headers={"Host": "_metrics.{0}".format(hostname)}))
+        metrics = json.loads(data.read())
+        for metric in metrics:
+            print "%(name) -40s %(value)s" % metric
+    except urllib2.HTTPError:
+        raise RuntimeError("Server failed to provide metrics")
 
 
 class StatHat(object):

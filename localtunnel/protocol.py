@@ -1,16 +1,19 @@
 import struct
 import json
 
-VERSION = 'LTP/0.2'
-
-ERRORS = {
+version = 'LTP/0.2'
+errors = {
     'unavailable': "This tunnel name is unavailable",
     'expired': "This tunnel has expired",
 }
 
+# Initial protocol assertion
+
 def assert_protocol(socket):
-    protocol = socket.recv(len(VERSION))
-    assert protocol == VERSION
+    protocol = socket.recv(len(version))
+    assert protocol == version
+
+# Message IO
 
 def recv_message(socket):
     try:
@@ -26,6 +29,8 @@ def send_message(socket, message):
     data = json.dumps(message)
     header = struct.pack(">I", len(data))
     socket.sendall(''.join([header, data]))
+
+# Message types
 
 def control_request(name, client, protect=None, domain=None):
     request = dict(name=name, client=client)
@@ -54,6 +59,6 @@ def proxy_reply():
     return {'proxy': True}
 
 def error_reply(error):
-    assert error in ERRORS
-    return dict(error=error, message=ERRORS[error])
+    assert error in errors
+    return dict(error=error, message=errors[error])
 

@@ -8,11 +8,11 @@ import eventlet.greenpool
 
 from localtunnel import util
 from localtunnel import protocol
-from localtunnel import VERSION
+from localtunnel import __version__
 
 def open_proxy_backend(backend, port, name, client):
     proxy = eventlet.connect(backend)
-    proxy.sendall(protocol.VERSION)
+    proxy.sendall(protocol.version)
     protocol.send_message(proxy, 
         protocol.proxy_request(
             name=name, 
@@ -39,15 +39,22 @@ def run():
                 help='localtunnel server address (default: v2.localtunnel.com)')
     parser.add_argument('--version', action='store_true',
                 help='show version information for client and server')
+    parser.add_argument('-m', action='store_true',
+                help='show server metrics and exit')
+
     
     if '--version' in sys.argv:
         args = parser.parse_args()
-        print "client: {}".format(VERSION)
+        print "client: {}".format(__version__)
         try:
             server_version = util.lookup_server_version(args.host)
         except:
             server_version = '??'
         print "server: {} ({})".format(server_version, args.host)
+        sys.exit(0)
+    elif '-m' in sys.argv:
+        args = parser.parse_args()
+        util.print_server_metrics(args.host)
         sys.exit(0)
     
     parser.add_argument('-n', dest='name', metavar='name',
@@ -59,6 +66,7 @@ def run():
     parser.add_argument('port', metavar='port', type=int,
                 help='local port of server to tunnel to')
     args = parser.parse_args()
+
         
     host = args.host.split(':')
     if len(host) == 1:
@@ -73,7 +81,7 @@ def run():
 
     try:
         control = eventlet.connect(backend)
-        control.sendall(protocol.VERSION)
+        control.sendall(protocol.version)
         protocol.send_message(control, 
             protocol.control_request(
                 name=name, 

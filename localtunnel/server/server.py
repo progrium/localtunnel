@@ -10,10 +10,11 @@ import eventlet.debug
 import eventlet.greenpool
 from eventlet.timeout import Timeout
 
-from localtunnel.tunnel import Tunnel
+from localtunnel.server.tunnel import Tunnel
 from localtunnel import util
 from localtunnel import protocol
-from localtunnel import VERSION
+from localtunnel import __version__
+from localtunnel.server import metrics
 
 HOST_TEMPLATE = "{0}.v2.localtunnel.com"
 BANNER = """Thanks for trying localtunnel v2 beta!
@@ -34,7 +35,8 @@ def backend_handler(socket, address):
             logging.debug("!backend: no request message, closing")
     except AssertionError:
         logging.debug("!backend: invalid protocol, closing")
-    
+
+@metrics.time_calls(name='backend_control')
 def handle_control(socket, request):
     try:
         tunnel = Tunnel.get_by_control_request(request)
@@ -61,6 +63,7 @@ def handle_control(socket, request):
         logging.debug("expiring tunnel:\"{0}\"".format(tunnel.name))
         tunnel.destroy()
 
+@metrics.meter_calls(name='backend_proxy')
 def handle_proxy(socket, request):
     try:
         tunnel = Tunnel.get_by_proxy_request(request)
@@ -80,6 +83,7 @@ def handle_proxy(socket, request):
     except ValueError, e:
         logging.debug(str(e))
 
+@metrics.time_calls(name='frontend')
 def frontend_handler(socket, address):
     hostname = ''
     hostheader = re.compile('host: ([^\(\);:,<>]+)', re.I)
@@ -102,10 +106,10 @@ def frontend_handler(socket, address):
         return
     if hostname.startswith('_version.'):
         data = """HTTP/1.1 200 OK\r\nContent-Length: {0}\r\nConnection: close\r\n\r\n{1}
-               """.format(len(VERSION), VERSION).strip()
+               """.format(len(__version__), __version__).strip()
         socket.sendall(data)
         socket.close()
-        logging.debug("version request")
+        logging.debug("version request from {0}".format(address[0]))
         return
     if hostname.startswith('_backend.'):
         port = os.environ.get('DOTCLOUD_SERVER_BACKEND_PORT', Tunnel.backend_port)
@@ -113,6 +117,15 @@ def frontend_handler(socket, address):
                """.format(len(str(port)), port).strip()
         socket.sendall(data)
         socket.close()
+        return
+    if hostname.startswith('_metrics.'):
+        content = json.dumps(metrics.dump_metrics(),
+                    sort_keys=True, indent=2, separators=(',', ': '))
+        data = """HTTP/1.1 200 OK\r\nContent-Length: {0}\r\nConnection: close\r\n\r\n{1}
+               """.format(len(content), content).strip()
+        socket.sendall(data)
+        socket.close()
+        logging.debug("metrics request from {0}".format(address[0]))
         return
     tunnel = Tunnel.get_by_hostname(hostname)
     if not tunnel:
