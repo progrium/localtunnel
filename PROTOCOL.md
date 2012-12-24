@@ -89,9 +89,29 @@ Backend.
 
 ## Two Connection Types
 
+When connecting to the Localtunnel Backend, there are two types of
+connection modes: Control and Proxy. Both share a common sequence of
+events:
+
+1. Client sends protocol header and request message
+1. Server asserts valid protocol header and reads message
+1. Server sends response message
+1. Preamble is over and connection either closes or goes into stream mode
+
+The connection type is defined by the request message. 
+
 ### Control Connection
 
+A control connection represents a tunnel session. The
+preamble request contains properties needed for setting up a tunnel.
+Stream mode is used for heartbeats until the client closes.
+
 ### Proxy Connection
+
+A proxy connection represents a tunneled connection. The preamble
+request contains properties to identify the tunnel it should be used
+for, and to signal when to open a connection on the client side. Stream
+mode is then used to proxy TCP traffic until either side closes.
 
 ## Protocol Header
 
