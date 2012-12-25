@@ -16,5 +16,5 @@ setup(
     entry_points={
         'console_scripts': [
             'localtunnel-beta = localtunnel.client:run',
-            'localtunneld = localtunnel.server:run',]},
+            'localtunneld = localtunnel.server.cli:run',]},
 )

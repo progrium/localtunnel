@@ -9,13 +9,6 @@ import requests
 import eventlet
 import eventlet.greenpool
 
-def leave_socket_open():
-    """ 
-    removes the linked greenlet to close socket 
-    after server handler function
-    """
-    eventlet.getcurrent()._exit_funcs = [] 
-
 def join_sockets(a, b):
     """ socket joining implementation """
     def _pipe(from_, to):

@@ -3,15 +3,17 @@ import time
 import logging
 
 import eventlet
+import eventlet.event
 import eventlet.timeout
 import eventlet.semaphore
+
+from localtunnel.server import metrics
 
 class Tunnel(object):
     max_pool_size = 3
     domain_part = 3
     backend_port = None
     active_timeout = 5 * 60
-    stats = None
 
     _tunnels = {}
 
@@ -32,35 +34,37 @@ class Tunnel(object):
         self.proxy_pool = []
         self.pool_semaphore = eventlet.semaphore.Semaphore(0)
 
-    def add_proxy_backend(self, socket):
+        metrics.counter('active_tunnel').inc()
+        platform = self.client.split(';', 1)[-1].lower()
+        metrics.counter('collect:{0}'.format(platform)).inc()
+
+    def add_proxy_conn(self, socket):
         pool_size = len(self.proxy_pool)
         if pool_size < Tunnel.max_pool_size:
-            self.proxy_pool.append(socket)
+            used = eventlet.event.Event()
+            self.proxy_pool.append((socket, used))
             self.pool_semaphore.release()
             self.updated = time.time()
             self.idle = False
+            return used
         else:
             raise ValueError("backend:\"{0}\" pool is full".format(
                     self.name))
 
-    def pop_proxy_backend(self, timeout=None):
+    def pop_proxy_conn(self, timeout=None):
         with eventlet.timeout.Timeout(timeout, False):
             self.pool_semaphore.acquire()
         if not len(self.proxy_pool):
-            return
+            return None, None
         return self.proxy_pool.pop()
 
     def destroy(self):
-        cls = self.__class__
-        if cls.stats:
-            duration = time.time() - self.created
-            cls.stats.value('tunnel_duration', duration)
-            platform = self.client.split(';', 1)[-1].lower()
-            cls.stats.count('usage:{0}'.format(platform), 1)
-        for backend in self.proxy_pool:
-            backend.close()
+        cls = self.__class__ 
+        for conn, _ in self.proxy_pool:
+            conn.close()
         if self == cls._tunnels[self.name]:
             cls._tunnels.pop(self.name, None)
+        metrics.counter('active_tunnel').dec()
 
 
     @classmethod
@@ -106,19 +110,15 @@ class Tunnel(object):
     @classmethod
     def schedule_idle_scan(cls):
         def _scan_idle():
-            tunnel_count = len(cls._tunnels)
-            idle_count = 0
+            counter = metrics.counter('idle_tunnel')
+            counter.clear()
             for name, tunnel in cls._tunnels.iteritems():
                 if time.time() - tunnel.updated > cls.active_timeout:
                     tunnel.idle = True
-                    idle_count += 1
-            if cls.stats:
-                cls.stats.value('total_tunnels', tunnel_count)
-                cls.stats.value('idle_tunnels', idle_count)
-            if idle_count:
+                    counter.inc()
+            if counter.get_value():
                 logging.debug("scan: {0} of {1} tunnels are idle".format(
-                    idle_count, tunnel_count))
-
+                    counter.get_value(), len(cls._tunnels)))
             cls.schedule_idle_scan()
         eventlet.spawn_after(cls.active_timeout, _scan_idle)
 
