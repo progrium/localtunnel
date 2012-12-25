@@ -10,7 +10,7 @@ from localtunnel.server.tunnel import Tunnel
 from localtunnel import util
 from localtunnel.server import backend
 from localtunnel.server import frontend
-
+from localtunnel.server import metrics
 
 def run():
     eventlet.debug.hub_prevent_multiple_readers(False)
@@ -39,9 +39,8 @@ def run():
     
     stats_key = os.environ.get('STATHAT_EZKEY', None)
     if stats_key:
-        Tunnel.stats = util.StatHat(stats_key, 'localtunnel.')
-        logging.info("starting stats session with {0}".format(stats_key))
-
+        metrics.run_reporter(stats_key)
+    
     frontend_listener = eventlet.listen(('0.0.0.0', args.frontend_port))
     backend_listener = eventlet.listen(('0.0.0.0', args.backend_port))
     

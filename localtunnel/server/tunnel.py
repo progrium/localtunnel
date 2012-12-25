@@ -34,7 +34,7 @@ class Tunnel(object):
         self.proxy_pool = []
         self.pool_semaphore = eventlet.semaphore.Semaphore(0)
 
-        metrics.counter('active_tunnel').inc()
+        metrics.counter('total_tunnel').inc()
         platform = self.client.split(';', 1)[-1].lower()
         metrics.counter('collect:{0}'.format(platform)).inc()
 
@@ -64,7 +64,7 @@ class Tunnel(object):
             conn.close()
         if self == cls._tunnels[self.name]:
             cls._tunnels.pop(self.name, None)
-        metrics.counter('active_tunnel').dec()
+        metrics.counter('total_tunnel').dec()
 
 
     @classmethod

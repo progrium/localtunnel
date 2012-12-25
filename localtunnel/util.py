@@ -4,8 +4,6 @@ import socket
 import urllib2
 import platform
 
-import requests
-
 import eventlet
 import eventlet.greenpool
 
@@ -69,32 +67,3 @@ def print_server_metrics(hostname):
     except urllib2.HTTPError:
         raise RuntimeError("Server failed to provide metrics")
 
-
-class StatHat(object):
-    """The StatHat API wrapper."""
-    STATHAT_URL = 'http://api.stathat.com'
-
-    def __init__(self, key=None, prefix=None):
-        self.key = key
-        self.prefix = prefix or ''
-        # Enable keep-alive and connection-pooling.
-        self.session = requests.session()
-
-    def _http_post(self, path, data):
-        url = self.STATHAT_URL + path
-        r = self.session.post(url, data=data, prefetch=True)
-        return r
-
-    def value(self, name, value):
-        r = self._http_post('/ez', {
-            'ezkey': self.key, 
-            'stat': ''.join([self.prefix, name]), 
-            'value': value})
-        return r.ok
-
-    def count(self, name, count):
-        r = self._http_post('/ez', {
-            'ezkey': self.key, 
-            'stat': ''.join([self.prefix, name]), 
-            'count': count})
-        return r.ok
