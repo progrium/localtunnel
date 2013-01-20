@@ -17,7 +17,7 @@ setup(
     ],
     url="http://github.com/progrium/localtunnel",
     packages=find_packages(),
-    install_requires=['eventlet', 'requests'],
+    install_requires=['eventlet', 'requests', 'argparse'],
     data_files=[],
     entry_points={
         'console_scripts': [
