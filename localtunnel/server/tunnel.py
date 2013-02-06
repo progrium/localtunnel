@@ -1,4 +1,5 @@
 import json
+import re
 import time
 import logging
 
@@ -11,7 +12,7 @@ from localtunnel.server import metrics
 
 class Tunnel(object):
     max_pool_size = 3
-    domain_part = 3
+    domain_suffix = None
     backend_port = None
     active_timeout = 5 * 60
 
@@ -75,17 +76,11 @@ class Tunnel(object):
 
     @classmethod
     def get_by_hostname(cls, hostname):
-        try:
-            name = hostname.split('.')[-1 * Tunnel.domain_part]
-        except IndexError:
+        if not hostname.endswith(Tunnel.domain_suffix):
             return
-        tunnel = cls._tunnels.get(name)
-        if not tunnel:
-            for n, tunnel in cls._tunnels.iteritems():
-                if tunnel.domain and hostname.endswith(tunnel.domain):
-                    return tunnel
-        else:
-            return tunnel
+        m = re.match('(.+?\.|)(\w+)\.%s$' % Tunnel.domain_suffix, hostname)
+        if m:
+            return cls._tunnels.get(m.group(2))
 
     @classmethod
     def get_by_control_request(cls, request):

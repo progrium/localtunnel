@@ -25,17 +25,15 @@ def run():
                 help='port to run public frontend', default=8000)
     parser.add_argument('backend_port', metavar='backend_port', type=int,
                 help='port to run backend server', default=8001)
-    parser.add_argument('-d', '--domainpart', type=int,
-                help='domain part (from the right) to extract tunnel name')
+    parser.add_argument('domain_suffix', metavar='domain_suffix', type=str,
+                help='domain suffix (from the right) to extract tunnel name')
     args = parser.parse_args()
     
     logging.info("starting frontend on {0}...".format(args.frontend_port))
     logging.info("starting backend on {0}...".format(args.backend_port))
     
     Tunnel.backend_port = args.backend_port
-    
-    if args.domainpart:
-        Tunnel.domain_part = args.domainpart
+    Tunnel.domain_suffix = args.domain_suffix
     
     stats_key = os.environ.get('STATHAT_EZKEY', None)
     if stats_key:
