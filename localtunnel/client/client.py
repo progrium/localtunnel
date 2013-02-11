@@ -10,18 +10,18 @@ from localtunnel import util
 from localtunnel import protocol
 from localtunnel import __version__
 
-def open_proxy_backend(backend, port, name, client):
+def open_proxy_backend(backend, port, name, client, localaddr):
     proxy = eventlet.connect(backend)
     proxy.sendall(protocol.version)
-    protocol.send_message(proxy, 
+    protocol.send_message(proxy,
         protocol.proxy_request(
-            name=name, 
+            name=name,
             client=client,
     ))
     reply = protocol.recv_message(proxy)
     if reply and 'proxy' in reply:
         try:
-            local = eventlet.connect(('0.0.0.0', port))
+            local = eventlet.connect((localaddr, port))
             util.join_sockets(proxy, local)
         except IOError:
             proxy.close()
@@ -30,7 +30,7 @@ def open_proxy_backend(backend, port, name, client):
         return
     else:
         pass
- 
+
 def run():
     parser = argparse.ArgumentParser(
                 description='Open a public HTTP tunnel to a local server')
@@ -42,7 +42,7 @@ def run():
     parser.add_argument('-m', action='store_true',
                 help='show server metrics and exit')
 
-    
+
     if '--version' in sys.argv:
         args = parser.parse_args()
         print "client: {}".format(__version__)
@@ -56,18 +56,21 @@ def run():
         args = parser.parse_args()
         util.print_server_metrics(args.host)
         sys.exit(0)
-    
+
     parser.add_argument('-n', dest='name', metavar='name',
-                default=str(uuid.uuid4()).split('-')[-1], 
+                default=str(uuid.uuid4()).split('-')[-1],
                 help='name of the tunnel (default: randomly generate)')
     parser.add_argument('-c', dest='concurrency', type=int,
                 metavar='concurrency', default=3,
                 help='number of concurrent backend connections')
     parser.add_argument('port', metavar='port', type=int,
                 help='local port of server to tunnel to')
+    parser.add_argument('-l', dest='localaddr',
+                metavar='localaddr', default='0.0.0.0',
+                help='local server ip address (default: 0.0.0.0)')
     args = parser.parse_args()
 
-        
+
     host = args.host.split(':')
     if len(host) == 1:
         backend_port = util.discover_backend_port(host[0])
@@ -82,9 +85,9 @@ def run():
     try:
         control = eventlet.connect(backend)
         control.sendall(protocol.version)
-        protocol.send_message(control, 
+        protocol.send_message(control,
             protocol.control_request(
-                name=name, 
+                name=name,
                 client=client,
         ))
         reply = protocol.recv_message(control)
@@ -94,8 +97,8 @@ def run():
             def maintain_proxy_backend_pool():
                 pool = eventlet.greenpool.GreenPool(reply['concurrency'])
                 while True:
-                    pool.spawn_n(open_proxy_backend, 
-                            backend, port, name, client)
+                    pool.spawn_n(open_proxy_backend,
+                            backend, port, name, client, args.localaddr)
             proxying = eventlet.spawn(maintain_proxy_backend_pool)
 
             print "  {0}".format(reply['banner'])
@@ -109,7 +112,7 @@ def run():
                     protocol.send_message(control, protocol.control_pong())
             except (IOError, AssertionError):
                 proxying.kill()
-            
+
         elif reply and 'error' in reply:
             print "  ERROR: {0}".format(reply['message'])
         else:
