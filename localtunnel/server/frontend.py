@@ -13,8 +13,8 @@ from localtunnel.server import metrics
 def peek_http_host(socket):
     host = ''
     hostheader = re.compile('host: ([^\(\);:,<>]+)', re.I)
-    # Peek up to 512 bytes into data for the Host header
-    for n in [128, 256, 512]:
+    # Peek up to 2048 bytes into data for the Host header
+    for n in [128, 256, 512, 1024, 2048]:
         bytes = socket.recv(n, MSG_PEEK)
         if not bytes:
             break
