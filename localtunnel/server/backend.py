@@ -11,7 +11,7 @@ from localtunnel import protocol
 from localtunnel import __version__
 from localtunnel.server import metrics
 
-HOST_TEMPLATE = "{0}.v2.localtunnel.com"
+HOST_TEMPLATE = "{0}.{1}"
 BANNER = """Thanks for trying localtunnel v2 beta!
   Source code: https://github.com/progrium/localtunnel
   Donate: http://j.mp/donate-localtunnel
@@ -42,7 +42,7 @@ def handle_control_request(socket, request):
         socket.close()
         return
     protocol.send_message(socket, protocol.control_reply(
-        host=HOST_TEMPLATE.format(tunnel.name),
+        host=HOST_TEMPLATE.format(tunnel.name, Tunnel.domain_suffix),
         banner=BANNER,
         concurrency=Tunnel.max_pool_size,
     ))
