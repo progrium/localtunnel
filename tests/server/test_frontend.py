@@ -23,6 +23,9 @@ class TestFrontendPeek(unittest.TestCase):
     def test_without_newline(self):
         self._test("Host: ABC", None)
 
+    def test_port(self):
+        self._test("Host: ABC:8000\r\n", "ABC:8000")
+
     def test_peeking(self):
         # Make sure the first peek of 128 chars contains just `Host: A`
         header = "%s\r\nHost: ABC\r\n" % (" " * 119)
