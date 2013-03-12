@@ -10,7 +10,7 @@ from localtunnel import util
 from localtunnel import protocol
 from localtunnel import __version__
 
-def open_proxy_backend(backend, port, name, client, localaddr):
+def open_proxy_backend(backend, target, name, client):
     proxy = eventlet.connect(backend)
     proxy.sendall(protocol.version)
     protocol.send_message(proxy,
@@ -21,7 +21,7 @@ def open_proxy_backend(backend, port, name, client, localaddr):
     reply = protocol.recv_message(proxy)
     if reply and 'proxy' in reply:
         try:
-            local = eventlet.connect((localaddr, port))
+            local = eventlet.connect(target)
             util.join_sockets(proxy, local)
         except IOError:
             proxy.close()
@@ -63,24 +63,18 @@ def run():
     parser.add_argument('-c', dest='concurrency', type=int,
                 metavar='concurrency', default=3,
                 help='number of concurrent backend connections')
-    parser.add_argument('port', metavar='port', type=int,
-                help='local port of server to tunnel to')
-    parser.add_argument('-l', dest='localaddr',
-                metavar='localaddr', default='0.0.0.0',
-                help='local server ip address (default: 0.0.0.0)')
+    parser.add_argument('target', metavar='target', type=str,
+                help='local target port or address of server to tunnel to')
     args = parser.parse_args()
 
 
-    host = args.host.split(':')
-    if len(host) == 1:
-        backend_port = util.discover_backend_port(host[0])
-    else:
-        backend_port = util.discover_backend_port(host[0], int(host[1]))
-    backend = (host[0], backend_port)
+    backend_port = util.discover_backend_port(args.host)
+    frontend_address, frontend_hostname = util.parse_address(args.host)
+    backend = (frontend_address[0], backend_port)
 
     name = args.name
     client = util.client_name()
-    port = args.port
+    target = util.parse_address(args.target)[0]
 
     try:
         control = eventlet.connect(backend)
@@ -98,12 +92,12 @@ def run():
                 pool = eventlet.greenpool.GreenPool(reply['concurrency'])
                 while True:
                     pool.spawn_n(open_proxy_backend,
-                            backend, port, name, client, args.localaddr)
+                            backend, target, name, client)
             proxying = eventlet.spawn(maintain_proxy_backend_pool)
 
             print "  {0}".format(reply['banner'])
             print "  Port {0} is now accessible from http://{1} ...\n".format(
-                    port, reply['host'])
+                    target[1], reply['host'])
 
             try:
                 while True:
