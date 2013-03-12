@@ -2,10 +2,13 @@ import json
 import getpass
 import socket
 import urllib2
+import urlparse
 import platform
 
 import eventlet
 import eventlet.greenpool
+
+import requests
 
 def join_sockets(a, b):
     """ socket joining implementation """
@@ -38,32 +41,51 @@ def client_name():
         socket.gethostname(),
         platform.system())
 
-def discover_backend_port(hostname, frontend_port=80):
+def parse_address(address, default_port=None, default_ip=None):
+    """ 
+    returns address (ip, port) and hostname from anything like:
+      localhost:8000
+      8000
+      :8000
+      myhost:80
+      0.0.0.0:8000
+    """
+    default_ip = default_ip or '0.0.0.0'
     try:
-        data = urllib2.urlopen(urllib2.Request(
-            "http://{0}:{1}/".format(hostname,frontend_port),
-            headers={"Host": "_backend.{0}".format(hostname)}))
-        return int(data.read())
-    except urllib2.HTTPError:
+        # this is if address is simply a port number
+        return (default_ip, int(address)), None
+    except ValueError:
+        parsed = urlparse.urlparse("tcp://{0}".format(address))
+        try:
+            if socket.gethostbyname(parsed.hostname) == parsed.hostname:
+                # hostname is an IP
+                return (parsed.hostname, parsed.port or default_port), None
+        except socket.error:
+            # likely, hostname is a domain name that can't be resolved
+            pass
+        # hostname is a domain name
+        return (default_ip, parsed.port or default_port), parsed.hostname
+
+
+def discover_backend_port(hostname, frontend_port=80):
+    resp = requests.get('http://{0}/meta/backend'.format(hostname))
+    if resp.status_code == 200:
+        return int(resp.text)
+    else:
         raise RuntimeError("Frontend failed to provide backend port")
 
 def lookup_server_version(hostname):
-    try:
-        data = urllib2.urlopen(urllib2.Request(
-            "http://{0}/".format(hostname),
-            headers={"Host": "_version.{0}".format(hostname)}))
-        return data.read()
-    except urllib2.HTTPError:
+    resp = requests.get('http://{0}/meta/version'.format(hostname))
+    if resp.status_code == 200:
+        return resp.text
+    else:
         raise RuntimeError("Server failed to provide version")
 
 def print_server_metrics(hostname):
-    try:
-        data = urllib2.urlopen(urllib2.Request(
-            "http://{0}/".format(hostname),
-            headers={"Host": "_metrics.{0}".format(hostname)}))
-        metrics = json.loads(data.read())
-        for metric in metrics:
+    resp = requests.get('http://{0}/meta/metrics'.format(hostname))
+    if resp.status_code == 200:
+        for metric in resp.json:
             print "%(name) -40s %(value)s" % metric
-    except urllib2.HTTPError:
+    else:
         raise RuntimeError("Server failed to provide metrics")
 
