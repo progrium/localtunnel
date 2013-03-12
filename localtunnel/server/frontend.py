@@ -6,73 +6,51 @@ from socket import MSG_PEEK
 
 from localtunnel.server.tunnel import Tunnel
 from localtunnel import util
+from localtunnel import meta
 from localtunnel import protocol
-from localtunnel import __version__
 from localtunnel.server import metrics
 
 def peek_http_host(socket):
     host = ''
-    hostheader = re.compile('host: ([^\(\);:,<>]+)', re.I)
-    # Peek up to 2048 bytes into data for the Host header
-    for n in [128, 256, 512, 1024, 2048]:
-        bytes = socket.recv(n, MSG_PEEK)
-        if not bytes:
-            break
-        for line in bytes.split('\r\n'):
-            match = hostheader.match(line)
-            if match:
-                host = match.group(1)
-        if host:
-            break
+    hostheader = re.compile('host: ([^\(\);,<>]+)', re.I)
+    # Peek up to 16 kilobytes into data for the Host header
+    bytes = socket.recv(1024 * 16, MSG_PEEK)
+    if not bytes:
+        return host
+    for line in bytes.split('\r\n'):
+        match = hostheader.match(line)
+        if match:
+            host = match.group(1)
     return host
 
-def send_http_response(socket, content):
-    data =  """HTTP/1.1 200 OK\r\nContent-Length: {0}\r\nConnection: close\r\n\r\n{1}
-            """.format(len(str(content)), content).strip()
+def send_http_error(socket, content, status=None):
+    status = status or '500 Internal Error'
+    data =  """HTTP/1.1 {0}\r\nContent-Length: {1}\r\nConnection: close\r\n\r\n{2}
+            """.format(status, len(str(content)), content).strip()
     socket.sendall(data)
+    socket.close()
+    logging.debug("!{0}".format(content.lower()))
 
 
 @metrics.time_calls(name='frontend_conn')
 def connection_handler(socket, address):
-    host = peek_http_host(socket)
-    hostname = host.split(':')[0]
+    hostname = peek_http_host(socket)
     if not hostname:
-        logging.debug("!no hostname, closing")
-        socket.close()
+        send_http_error(socket, 'No hostname', '400 Bad Request')
         return
 
-    if hostname.startswith('_version.'):
-        send_http_response(socket, __version__)
-        socket.close()
-        logging.debug("version request from {0}".format(address[0]))
-        return
-
-    if hostname.startswith('_backend.'):
-        port = os.environ.get('DOTCLOUD_SERVER_BACKEND_PORT', 
-                    Tunnel.backend_port)
-        send_http_response(socket, port)
-        socket.close()
-        return
-
-    if hostname.startswith('_metrics.'):
-        content = json.dumps(metrics.dump_metrics(),
-                    sort_keys=True, indent=2, separators=(',', ': '))
-        send_http_response(socket, content)
-        socket.close()
-        logging.debug("metrics request from {0}".format(address[0]))
+    if hostname == Tunnel.domain_suffix:
+        meta.server.process_request((socket, address))
         return
 
     tunnel = Tunnel.get_by_hostname(hostname)
     if not tunnel:
-        logging.debug("!no tunnel, closing ({0})".format(
-            hostname))
-        socket.close()
+        send_http_error(socket, 'No tunnel for {0}'.format(hostname), '410 Gone')
         return
 
     conn, proxy_used = tunnel.pop_proxy_conn(timeout=2)
     if not conn:
-        logging.debug("!no proxy connection, closing")
-        socket.close()
+        send_http_error(socket, 'No proxy connections', '502 Bad Gateway')
         return
 
     protocol.send_message(conn, protocol.proxy_reply())
