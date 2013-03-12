@@ -21,26 +21,34 @@ def run():
         level=logging.DEBUG)
 
     parser = argparse.ArgumentParser(description='Localtunnel server daemon')
-    parser.add_argument('frontend_port', metavar='frontend_port', type=int,
-                help='port to run public frontend', default=8000)
-    parser.add_argument('backend_port', metavar='backend_port', type=int,
-                help='port to run backend server', default=8001)
-    parser.add_argument('domain_suffix', metavar='domain_suffix', type=str,
-                help='domain suffix (from the right) to extract tunnel name')
+    parser.add_argument('frontend', metavar='frontend_listener', type=str,
+        help='hostname to run frontend on (default: vcap.me:8000)', 
+        default='vcap.me:8000')
+    parser.add_argument('backend', metavar='backend_listener', type=str,
+        help='port or address to run backend server on (default: 8001)',
+        default='8001')
     args = parser.parse_args()
     
-    logging.info("starting frontend on {0}...".format(args.frontend_port))
-    logging.info("starting backend on {0}...".format(args.backend_port))
+    frontend_address, frontend_hostname = util.parse_address(args.frontend)
+    backend_address, backend_hostname = util.parse_address(args.backend)
+
+    logging.info("starting frontend on {0} for {1}...".format(
+        frontend_address, frontend_hostname))
+    logging.info("starting backend on {0}...".format(backend_address))
     
-    Tunnel.backend_port = args.backend_port
-    Tunnel.domain_suffix = args.domain_suffix
+    Tunnel.backend_port = backend_address[1]
+    if frontend_address[1] == 80:
+        Tunnel.domain_suffix = frontend_hostname
+    else:
+        Tunnel.domain_suffix = ":".join(
+            [frontend_hostname, str(frontend_address[1])])
     
     stats_key = os.environ.get('STATHAT_EZKEY', None)
     if stats_key:
         metrics.run_reporter(stats_key)
     
-    frontend_listener = eventlet.listen(('0.0.0.0', args.frontend_port))
-    backend_listener = eventlet.listen(('0.0.0.0', args.backend_port))
+    frontend_listener = eventlet.listen(frontend_address)
+    backend_listener = eventlet.listen(backend_address)
     
     try:
         Tunnel.schedule_idle_scan()
