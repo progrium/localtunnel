@@ -10,18 +10,18 @@ from localtunnel import meta
 from localtunnel import protocol
 from localtunnel.server import metrics
 
+
 def peek_http_host(socket):
-    host = ''
-    hostheader = re.compile('host: ([^\(\);,<>]+)', re.I)
-    # Peek up to 16 kilobytes into data for the Host header
-    bytes = socket.recv(1024 * 16, MSG_PEEK)
-    if not bytes:
-        return host
-    for line in bytes.split('\r\n'):
-        match = hostheader.match(line)
+    hostheader = re.compile('(^|\r\n)host: ([^\(\);:,<>]+)\r\n', re.I)
+    # Peek up to 2048 bytes into data for the Host header
+    for n in [128, 256, 512, 1024, 2048]:
+        bytes = socket.recv(n, MSG_PEEK)
+        if not bytes:
+            break
+        match = hostheader.search(bytes)
         if match:
-            host = match.group(1)
-    return host
+            return match.group(2)
+
 
 def send_http_error(socket, content, status=None):
     status = status or '500 Internal Error'
