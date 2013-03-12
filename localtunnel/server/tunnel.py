@@ -78,9 +78,9 @@ class Tunnel(object):
     def get_by_hostname(cls, hostname):
         if not hostname.endswith(Tunnel.domain_suffix):
             return
-        m = re.match('(.+?\.|)(\w+)\.%s$' % Tunnel.domain_suffix, hostname)
-        if m:
-            return cls._tunnels.get(m.group(2))
+        match = re.match('(.+?\.|)(\w+)\.$', hostname[:-len(Tunnel.domain_suffix)])
+        if match:
+            return cls._tunnels.get(match.group(2))
 
     @classmethod
     def get_by_control_request(cls, request):
@@ -111,7 +111,7 @@ class Tunnel(object):
                 if time.time() - tunnel.updated > cls.active_timeout:
                     tunnel.idle = True
                     counter.inc()
-            if counter.get_value():
+            if counter.get_count():
                 logging.debug("scan: {0} of {1} tunnels are idle".format(
                     counter.get_value(), len(cls._tunnels)))
             cls.schedule_idle_scan()
