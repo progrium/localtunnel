@@ -74,7 +74,7 @@ def run():
     except:
         print "  ERROR: Unable to connect to service."
         sys.exit(0)
-    frontend_ip = socket.gethostbyname(args.host)
+    frontend_ip = socket.gethostbyname(args.host.split(':')[0])
     frontend_address, frontend_hostname = util.parse_address(args.host,
             default_ip=frontend_ip)
     backend = (frontend_address[0], backend_port)
