@@ -1,5 +1,12 @@
 import json
 import os
+# Some environments require these extra imports due to
+# eventlet's monkey patching code.
+import SocketServer
+import httplib
+import ftplib
+import urllib
+import BaseHTTPServer
 
 from eventlet.wsgi import Server
 
