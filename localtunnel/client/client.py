@@ -82,7 +82,6 @@ def run():
     name = args.name
     client = util.client_name()
     target = util.parse_address(args.target)[0]
-
     try:
         control = eventlet.connect(backend)
         control.sendall(protocol.version)
@@ -121,3 +120,6 @@ def run():
             print "         Make sure you have the latest version of the client."
     except KeyboardInterrupt:
         pass
+
+if __name__ == '__main__':
+	run()
