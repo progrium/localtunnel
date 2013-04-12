@@ -59,6 +59,9 @@ def proxy_reply():
     return {'proxy': True}
 
 def error_reply(error):
-    assert error in errors
-    return dict(error=error, message=errors[error])
+    if isinstance(error, BaseException):
+        return dict(error='exception', message=str(error))
+    else:
+        assert error in errors
+        return dict(error=error, message=errors[error])
 

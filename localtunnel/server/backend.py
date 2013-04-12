@@ -38,7 +38,7 @@ def handle_control_request(socket, request):
     try:
         tunnel = Tunnel.get_by_control_request(request)
     except RuntimeError, e:
-        protocol.send_message(socket, error_reply('notavailable'))
+        protocol.send_message(socket, protocol.error_reply('notavailable'))
         socket.close()
         return
     protocol.send_message(socket, protocol.control_reply(
@@ -79,4 +79,6 @@ def handle_proxy_request(socket, request):
         pool = proxy_used.wait()
         pool.waitall()
     except ValueError, e:
+        protocol.send_message(socket, protocol.error_reply(e))
+        socket.close()
         logging.debug(str(e))
