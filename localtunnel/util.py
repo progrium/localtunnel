@@ -50,7 +50,7 @@ def parse_address(address, default_port=None, default_ip=None):
       myhost:80
       0.0.0.0:8000
     """
-    default_ip = default_ip or '127.0.0.1'
+    default_ip = default_ip or '0.0.0.0'
     try:
         # this is if address is simply a port number
         return (default_ip, int(address)), None
