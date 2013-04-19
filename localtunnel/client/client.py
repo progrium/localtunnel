@@ -32,56 +32,23 @@ def open_proxy_backend(backend, target, name, client):
     else:
         pass
 
-def run():
-    parser = argparse.ArgumentParser(
-                description='Open a public HTTP tunnel to a local server')
-    parser.add_argument('-s', dest='host', metavar='address',
-                default='v2.localtunnel.com',
-                help='localtunnel server address (default: v2.localtunnel.com)')
-    parser.add_argument('--version', action='store_true',
-                help='show version information for client and server')
-    parser.add_argument('-m', action='store_true',
-                help='show server metrics and exit')
-
-
-    if '--version' in sys.argv:
-        args = parser.parse_args()
-        print "client: {}".format(__version__)
-        try:
-            server_version = util.lookup_server_version(args.host)
-        except:
-            server_version = '??'
-        print "server: {} ({})".format(server_version, args.host)
-        sys.exit(0)
-    elif '-m' in sys.argv:
-        args = parser.parse_args()
-        util.print_server_metrics(args.host)
-        sys.exit(0)
-
-    parser.add_argument('-n', dest='name', metavar='name',
-                default=str(uuid.uuid4()).split('-')[-1],
-                help='name of the tunnel (default: randomly generate)')
-    parser.add_argument('-c', dest='concurrency', type=int,
-                metavar='concurrency', default=3,
-                help='number of concurrent backend connections')
-    parser.add_argument('target', metavar='target', type=str,
-                help='local target port or address of server to tunnel to')
-    args = parser.parse_args()
-
+def start_client(**kwargs):
+    host = kwargs['host']
 
     try:
-        backend_port = util.discover_backend_port(args.host)
+        backend_port = util.discover_backend_port(host)
     except:
         print "  ERROR: Unable to connect to service."
         sys.exit(0)
-    frontend_ip = socket.gethostbyname(args.host.split(':')[0])
-    frontend_address, frontend_hostname = util.parse_address(args.host,
+    frontend_ip = socket.gethostbyname(host.split(':')[0])
+    frontend_address, frontend_hostname = util.parse_address(host,
             default_ip=frontend_ip)
     backend = (frontend_address[0], backend_port)
 
-    name = args.name
+    name = kwargs['name']
+
     client = util.client_name()
-    target = util.parse_address(args.target)[0]
+    target = util.parse_address(kwargs['target'])[0]
     try:
         control = eventlet.connect(backend)
         control.sendall(protocol.version)
@@ -120,6 +87,46 @@ def run():
             print "         Make sure you have the latest version of the client."
     except KeyboardInterrupt:
         pass
+
+def run():
+    parser = argparse.ArgumentParser(
+                description='Open a public HTTP tunnel to a local server')
+    parser.add_argument('-s', dest='host', metavar='address',
+                default='v2.localtunnel.com',
+                help='localtunnel server address (default: v2.localtunnel.com)')
+    parser.add_argument('--version', action='store_true',
+                help='show version information for client and server')
+    parser.add_argument('-m', action='store_true',
+                help='show server metrics and exit')
+
+
+    if '--version' in sys.argv:
+        args = parser.parse_args()
+        print "client: {}".format(__version__)
+        try:
+            server_version = util.lookup_server_version(args.host)
+        except:
+            server_version = '??'
+        print "server: {} ({})".format(server_version, args.host)
+        sys.exit(0)
+    elif '-m' in sys.argv:
+        args = parser.parse_args()
+        util.print_server_metrics(args.host)
+        sys.exit(0)
+
+    parser.add_argument('-n', dest='name', metavar='name',
+                default=str(uuid.uuid4()).split('-')[-1],
+                help='name of the tunnel (default: randomly generate)')
+    parser.add_argument('-c', dest='concurrency', type=int,
+                metavar='concurrency', default=3,
+                help='number of concurrent backend connections')
+    parser.add_argument('target', metavar='target', type=str,
+                help='local target port or address of server to tunnel to')
+    args = parser.parse_args()
+
+
+    start_client(**vars(args))
+
 
 if __name__ == '__main__':
 	run()
