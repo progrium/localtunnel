@@ -15,6 +15,8 @@ class Tunnel(object):
     domain_suffix = None
     backend_port = None
     active_timeout = 5 * 60
+    create_callback = None
+    destroy_callback = None
 
     _tunnels = {}
 
@@ -60,18 +62,25 @@ class Tunnel(object):
         return self.proxy_pool.pop()
 
     def destroy(self):
-        cls = self.__class__ 
+        cls = self.__class__
         for conn, _ in self.proxy_pool:
             conn.close()
         if self == cls._tunnels[self.name]:
             cls._tunnels.pop(self.name, None)
         metrics.counter('total_tunnel').dec()
 
+        if cls.destroy_callback:
+            cls.destroy_callback(self)
+
 
     @classmethod
     def create(cls, obj):
         tunnel = cls(**obj)
         cls._tunnels[tunnel.name] = tunnel
+
+        if cls.create_callback:
+            cls.create_callback(tunnel)
+
         return tunnel
 
     @classmethod
