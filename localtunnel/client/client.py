@@ -34,12 +34,15 @@ def open_proxy_backend(backend, target, name, client):
 
 def start_client(**kwargs):
     host = kwargs['host']
+    backend_port = kwargs.get('backend_port')
 
-    try:
-        backend_port = util.discover_backend_port(host)
-    except:
-        print "  ERROR: Unable to connect to service."
-        sys.exit(0)
+    if not backend_port:
+        try:
+            backend_port = util.discover_backend_port(host)
+        except:
+            print "  ERROR: Unable to connect to service."
+            sys.exit(0)
+
     frontend_ip = socket.gethostbyname(host.split(':')[0])
     frontend_address, frontend_hostname = util.parse_address(host,
             default_ip=frontend_ip)
