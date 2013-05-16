@@ -11,8 +11,11 @@ from localtunnel import util
 from localtunnel import protocol
 from localtunnel import __version__
 
-def open_proxy_backend(backend, target, name, client):
+def open_proxy_backend(backend, target, name, client, use_ssl=False, ssl_opts=None):
     proxy = eventlet.connect(backend)
+    if use_ssl:
+        ssl_opts = ssl_opts or {}
+        proxy = eventlet.wrap_ssl(proxy, server_side=False, **ssl_opts)
     proxy.sendall(protocol.version)
     protocol.send_message(proxy,
         protocol.proxy_request(
@@ -35,6 +38,8 @@ def open_proxy_backend(backend, target, name, client):
 def start_client(**kwargs):
     host = kwargs['host']
     backend_port = kwargs.get('backend_port')
+    use_ssl = kwargs.get('use_ssl', False)
+    ssl_opts = kwargs.get('ssl_opts', {})
 
     if not backend_port:
         try:
@@ -54,6 +59,8 @@ def start_client(**kwargs):
     target = util.parse_address(kwargs['target'])[0]
     try:
         control = eventlet.connect(backend)
+        if use_ssl:
+            control = eventlet.wrap_ssl(control, server_side=False, **ssl_opts)
         control.sendall(protocol.version)
         protocol.send_message(control,
             protocol.control_request(
@@ -68,7 +75,7 @@ def start_client(**kwargs):
                 pool = eventlet.greenpool.GreenPool(reply['concurrency'])
                 while True:
                     pool.spawn_n(open_proxy_backend,
-                            backend, target, name, client)
+                            backend, target, name, client, use_ssl, ssl_opts)
             proxying = eventlet.spawn(maintain_proxy_backend_pool)
 
             print "  {0}".format(reply['banner'])
