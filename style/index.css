@@ -3,7 +3,7 @@ body {
 	font-family:'Courier'; 
 	color:#404040; 
 	margin:0px; 
-	overflow: hidden;
+
 }
 
 .content { 
@@ -138,11 +138,11 @@ body {
 						
 						.sub-content .ground-icons .sponsored-by .logo { 
 							position:absolute; 
-							width:176px; 
-							height:52px; 
-							left:135px; 
-							top:0px; 
-							background-image:url("../images/icon_twiliologo.png"); 
+							width:200px; 
+							height:39px; 
+							left:130px; 
+							top:5px; 
+							background-image:url("../images/runscope-full-logo-big.png"); 
 							float:left; 
 						} 
 				
