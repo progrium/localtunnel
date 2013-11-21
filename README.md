@@ -1,3 +1,5 @@
+__This project is currently down. Please use [Ngrok](https://ngrok.com/). It is hoped Localtunnel and Ngrok will eventually be merged.___
+
 Localtunnel v2 (Beta)
 =====================
 
