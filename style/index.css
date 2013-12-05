@@ -22,7 +22,15 @@ body {
 			margin-left:auto; 
 			margin-right:auto; 
 			margin-bottom:80px; 
-		} 
+		}
+
+		.content .redirect {
+			margin-bottom: 80px;
+		    font-size: 26px;
+		    background-color: #A8B732;
+		    padding: 15px;
+		    border-radius: 5px;
+		}
 		
 		.content .callout { 
 			position:relative; 
