@@ -1,6 +1,6 @@
 # localtunnel
 
-What happened to localtunnel? After pioneering instant public tunnels to localhost, many people copied the project and started businesses around the idea. Localtunnel fell into obscurity. Today, Alan Shrieve's [Ngrok](https://ngrok.com) rightly dominates mindshare on the idea. 
+What happened to localtunnel? After pioneering instant public tunnels to localhost, many people copied the project and started businesses around the idea. Localtunnel fell into obscurity. Today, Alan Shreve's [Ngrok](https://ngrok.com) rightly dominates mindshare on the idea. 
 
 This repo now contains localtunnel v3, a very minimal implementation (under 200 lines) written in Go using my new project [Duplex](https://github.com/progrium/duplex). Duplex lets you make stuff like localtunnel very easily. Although usable, there is no public server and the scope of the project is pretty fixed where it is.
 
