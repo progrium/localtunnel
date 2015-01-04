@@ -1,5 +1,0 @@
-git+git://github.com/progrium/yunomi.git
-eventlet==0.9.17
-greenlet==0.3.1
-argparse==1.2.1
-requests==0.14.1

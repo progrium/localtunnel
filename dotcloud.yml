@@ -1,7 +1,0 @@
-server:
-  type: custom
-  buildscript: builder
-  ports:
-    frontend: http
-    backend: tcp
-  process: ~/env/bin/localtunneld -d 4 $PORT_FRONTEND $PORT_BACKEND
